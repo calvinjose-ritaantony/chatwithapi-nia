@@ -14,13 +14,14 @@ from azure.identity import ClientSecretCredential
 from azure.core.exceptions import AzureError
 
 from pymongo.errors import DuplicateKeyError
+from app_config import RAG_DOCUMENTS_FOLDER
 from data.GPTData import GPTData
 from auth_config import azure_scheme
 from data.InputPrompt import InputPrompt
 from data.ModelConfiguration import ModelConfiguration
 from gpt_utils import handle_upload_files, create_folders
 from azure_openai_utils import generate_response
-from mongo_service import fetch_chat_history_for_use_case, get_gpt_by_id, create_new_gpt, get_gpts_for_user, update_gpt, delete_gpt, delete_gpts, delete_chat_history, fetch_chat_history, get_usecases, update_gpt_instruction, get_collection, get_prompts, update_prompt, delete_prompt
+from mongo_service import fetch_chat_history_for_use_case, get_gpt_by_id, create_new_gpt, get_gpts_for_user, update_gpt, delete_gpt, delete_gpts, delete_chat_history, fetch_chat_history, get_usecases, update_gpt_instruction, get_collection, get_prompts, update_prompt, delete_prompt, update_usecases
 from prompt_utils import PromptValidator
 
 from bson import ObjectId
@@ -30,6 +31,7 @@ conversations = []
 use_cases = []
 max_tokens_in_conversation = 10 # To be implemented
 max_conversations_to_consider = 10
+nia_thinking_process = []
 
 delimiter = "```"
 load_dotenv()  # Load environment variables from .env file
@@ -94,8 +96,37 @@ async def get_gpts(request: Request, user: Annotated[dict, Depends(azure_scheme)
 
     if loggedUser != None and loggedUser != "N/A":
         gpts = await get_gpts_for_user(loggedUser)
-        for gpt in gpts:
-            gpt["_id"] = str(gpt["_id"]) # Convert ObjectId to string
+
+        # If there is no gpts for a logged user. Create a gpt named Nia and update the usecases
+        if len(gpts) == 0:
+            gpt = GPTData(
+                name="gpt-4o",
+                description="Nia",
+                instructions="You are Nia, a virtual assistant. You can help the user with their tasks. You can answer questions, provide information, and help the user with their tasks. You can also ask follow-up questions to clarify the user's request.",
+                use_rag=True,
+                user=loggedUser,
+                use_case_id=""  # Set use_case_id to an empty string if not provided
+            )
+
+            print(f"Creating new GPT as no GPTs found for the user. {gpt}")
+            gpt_id = await create_new_gpt(gpt)
+            if gpt_id is not None:
+                logger.info(f"No GPTs found for the logged user. Created a new GPT with ID: {gpt_id}")
+                gpt._id = ObjectId(gpt_id)
+                gpts.append(gpt.model_dump(mode="json"))  # Convert GPTData to dict for JSON response
+
+            # update usecases
+            file_path = os.path.join(RAG_DOCUMENTS_FOLDER, "usecases_template.json")
+            try:
+                with open(file_path, "r", encoding='utf-8') as json_file:
+                    usecases = json.load(json_file)
+                    for usecase in usecases:
+                        usecase['gpt_id'] = ObjectId(gpt_id)
+                    await update_usecases(gpt_id, usecases)
+                    logger.info(f"usecases added to the gpt {gpt_id} successfully.")
+            except Exception as e:
+                logger.info(f"Error processing file: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
     return JSONResponse({"gpts": gpts}, status_code=200)
 
