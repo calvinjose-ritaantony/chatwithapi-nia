@@ -23,6 +23,7 @@ from gpt_utils import handle_upload_files, create_folders
 from azure_openai_utils import generate_response
 from mongo_service import fetch_chat_history_for_use_case, get_gpt_by_id, create_new_gpt, get_gpts_for_user, update_gpt, delete_gpt, delete_gpts, delete_chat_history, fetch_chat_history, get_usecases, update_gpt_instruction, get_collection, get_prompts, update_prompt, delete_prompt, update_usecases
 from prompt_utils import PromptValidator
+from guards.guardWrapper import guardrails_validation
 
 from bson import ObjectId
 from dotenv import load_dotenv # For environment variables (recommended)
@@ -130,7 +131,14 @@ async def get_gpts(request: Request, user: Annotated[dict, Depends(azure_scheme)
 
     return JSONResponse({"gpts": gpts}, status_code=200)
 
+
+# @router.post("/test-toxic")
+# @toxic_language_guard(response_arg_name="reply")
+# async def test_route():
+#     return {"reply": "I hate you, you idiot!"}  # deliberately toxic
+
 @router.post("/chat/{gpt_id}/{gpt_name}")
+@guardrails_validation(prompt_arg="user_message", response_key="response")
 async def chat(request: Request, gpt_id: str, gpt_name: str, user: Annotated[dict, Depends(azure_scheme)], user_message: str = Form(...), params: str = Form(...), uploadedImage: UploadFile = File(...)):
     if not user_message:
         return JSONResponse({"error": "Missing 'user_message' in request body."}, status_code=400)

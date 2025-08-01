@@ -1,0 +1,158 @@
+Step 1: Install Guardrails using pip:
+    pip install guardrails-ai
+
+Step 2: Configure guardrails
+    guardrails Configure
+    -> Set Enable anonymous metrics reporting? [Y/n]: n
+    -> Set Do you wish to use remote inferencing? [Y/n]: n
+    -> Generate an API key in https://hub.guardrailsai.com/keys
+    -> Enter the generated API key
+
+Step 3: Install required guardrails as below
+    -> guardrails hub install hub://guardrails/toxic_language 
+
+Error faced:
+One exception to update logs in another server during Guardrails execution error will be like
+2025-07-06 19:10:58,059 - ERROR - __init__:165 - Exception while exporting Span.
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 203, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connectionpool.py", line 791, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connectionpool.py", line 497, in _make_request
+    conn.request(
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 395, in request
+    self.endheaders()
+  File "C:\Users\kkk\AppData\Local\Programs\Python\Python312\Lib\http\client.py", line 1331, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\kkk\AppData\Local\Programs\Python\Python312\Lib\http\client.py", line 1091, in _send_output
+    self.send(msg)
+  File "C:\Users\kkk\AppData\Local\Programs\Python\Python312\Lib\http\client.py", line 1035, in send
+    self.connect()
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 243, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 218, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000002477C3625A0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\adapters.py", line 667, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connectionpool.py", line 845, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\util\retry.py", line 515, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=4318): Max retries exceeded with url: /v1/traces (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002477C3625A0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\opentelemetry\exporter\otlp\proto\http\trace_exporter\__init__.py", line 139, in _export
+    resp = self._session.post(
+           ^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\sessions.py", line 637, in post
+    return self.request("POST", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\adapters.py", line 700, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=4318): Max retries exceeded with url: /v1/traces (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002477C3625A0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 203, in _new_conn
+    sock = connection.create_connection(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\util\connection.py", line 85, in create_connection
+    raise err
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\util\connection.py", line 73, in create_connection
+    sock.connect(sa)
+ConnectionRefusedError: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connectionpool.py", line 791, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connectionpool.py", line 497, in _make_request
+    conn.request(
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 395, in request
+    self.endheaders()
+  File "C:\Users\kkk\AppData\Local\Programs\Python\Python312\Lib\http\client.py", line 1331, in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+  File "C:\Users\kkk\AppData\Local\Programs\Python\Python312\Lib\http\client.py", line 1091, in _send_output
+    self.send(msg)
+  File "C:\Users\kkk\AppData\Local\Programs\Python\Python312\Lib\http\client.py", line 1035, in send
+    self.connect()
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 243, in connect
+    self.sock = self._new_conn()
+                ^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connection.py", line 218, in _new_conn
+    raise NewConnectionError(
+urllib3.exceptions.NewConnectionError: <urllib3.connection.HTTPConnection object at 0x000002477E448080>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\adapters.py", line 667, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\connectionpool.py", line 845, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\urllib3\util\retry.py", line 515, in increment
+    raise MaxRetryError(_pool, url, reason) from reason  # type: ignore[arg-type]
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+urllib3.exceptions.MaxRetryError: HTTPConnectionPool(host='localhost', port=4318): Max retries exceeded with url: /v1/traces (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002477E448080>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\opentelemetry\sdk\_shared_internal\__init__.py", line 152, in _export
+    self._exporter.export(
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\opentelemetry\exporter\otlp\proto\http\trace_exporter\__init__.py", line 204, in export
+    return self._export_serialized_spans(serialized_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\opentelemetry\exporter\otlp\proto\http\trace_exporter\__init__.py", line 174, in _export_serialized_spans
+    resp = self._export(serialized_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\opentelemetry\exporter\otlp\proto\http\trace_exporter\__init__.py", line 147, in _export
+    resp = self._session.post(
+           ^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\sessions.py", line 637, in post
+    return self.request("POST", url, data=data, json=json, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\sessions.py", line 589, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\sessions.py", line 703, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\kkk\OneDrive - bbb Group\Documents\Office\PycharmProjects\NextGenCX-nia\chatwithapi-nia\.venv\Lib\site-packages\requests\adapters.py", line 700, in send
+    raise ConnectionError(e, request=request)
+requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=4318): Max retries exceeded with url: /v1/traces (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002477E448080>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+Solution - Add, os.environ["OTEL_SDK_DISABLED"] = "true"
