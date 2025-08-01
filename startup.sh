@@ -16,13 +16,13 @@ pip install fastapi uvicorn python-multipart
 
 # === Guardrails Setup ===
 echo "Setting Guardrails environment variables"
-export GUARDRAILS_API_KEY   # Make sure this is actually set before running!
+export GUARDRAILS_API_KEY   # Ensure this is set in the environment!
 
 echo "Guardrails API Key is set: ${GUARDRAILS_API_KEY:0:4}****"
 
-# === Guardrails Configure (Non-Interactive) ===
-echo "Configuring Guardrails with API Key"
-echo "${GUARDRAILS_API_KEY}" | guardrails configure
+# Configure Guardrails non-interactively, disable metrics & remote inferencing
+echo "Configuring Guardrails with API Key and disabling metrics"
+guardrails configure --disable-metrics --disable-remote-inferencing --token "${GUARDRAILS_API_KEY}"
 
 echo "Installing Guardrails Hub validators"
 guardrails hub install hub://guardrails/detect_jailbreak
