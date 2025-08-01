@@ -15,19 +15,17 @@ echo "Installing uvicorn separately"
 pip install fastapi uvicorn python-multipart
 
 # === Guardrails Setup ===
-echo "Logging into Guardrails CLI"
+echo "Setting Guardrails environment variables"
+export GUARDRAILS_API_KEY   # Make sure this is actually set before running!
+
 echo "Guardrails API Key is set: ${GUARDRAILS_API_KEY:0:4}****"
 
-# Authenticate Guardrails CLI (instead of using config.toml directly)
-guardrails auth login --api-key "$GUARDRAILS_API_KEY"
-
-# Optional: verify login worked
-guardrails auth whoami || echo "Guardrails login failed"
-
+# === Guardrails Configure (Non-Interactive) ===
+echo "Configuring Guardrails with API Key"
+echo "${GUARDRAILS_API_KEY}" | guardrails configure
 
 echo "Installing Guardrails Hub validators"
 guardrails hub install hub://guardrails/detect_jailbreak
-guardrails hub install hub://guardrails/arize_dataset_embeddings
 guardrails hub install hub://guardrails/toxic_language
 guardrails hub install hub://guardrails/secrets_present
 guardrails hub install hub://guardrails/guardrails_pii
