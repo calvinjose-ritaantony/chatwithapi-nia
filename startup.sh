@@ -14,21 +14,21 @@ python -m pip install --upgrade -r requirements.txt
 echo "Installing uvicorn separately"
 pip install fastapi uvicorn python-multipart
 
-# === Guardrails Setup ===
-echo "Setting Guardrails environment variables with CLI token"
-export GUARDRAILS_API_KEY   # Your existing variable
-export GUARDRAILS_CLI_TOKEN="${GUARDRAILS_API_KEY}"   # Guardrails CLI checks this variable
+# # === Guardrails Setup ===
+# echo "Setting Guardrails environment variables with CLI token"
+# export GUARDRAILS_API_KEY   # Your existing variable
+# export GUARDRAILS_CLI_TOKEN="${GUARDRAILS_API_KEY}"   # Guardrails CLI checks this variable
 
-echo "Guardrails API Key is set: ${GUARDRAILS_API_KEY:0:4}****"
+# echo "Guardrails API Key is set: ${GUARDRAILS_API_KEY:0:4}****"
 
-# This now sets token via env, not needing a prompt
-guardrails configure --disable-metrics --disable-remote-inferencing --token "${GUARDRAILS_CLI_TOKEN}"
+# # This now sets token via env, not needing a prompt
+# guardrails configure --disable-metrics --disable-remote-inferencing --token "${GUARDRAILS_CLI_TOKEN}"
 
-echo "Installing Guardrails Hub validators"
-guardrails hub install hub://guardrails/detect_jailbreak
-guardrails hub install hub://guardrails/toxic_language
-guardrails hub install hub://guardrails/secrets_present
-guardrails hub install hub://guardrails/guardrails_pii
+# echo "Installing Guardrails Hub validators"
+# guardrails hub install hub://guardrails/detect_jailbreak
+# guardrails hub install hub://guardrails/toxic_language
+# guardrails hub install hub://guardrails/secrets_present
+# guardrails hub install hub://guardrails/guardrails_pii
 
 # Confirm Uvicorn version
 echo "The uvicorn version installed is:"
