@@ -156,3 +156,480 @@ Traceback (most recent call last):
     raise ConnectionError(e, request=request)
 requests.exceptions.ConnectionError: HTTPConnectionPool(host='localhost', port=4318): Max retries exceeded with url: /v1/traces (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002477E448080>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
 Solution - Add, os.environ["OTEL_SDK_DISABLED"] = "true"
+
+
+
+Approaches for Production grade Guardrails and challenges
+
+Approach-Startup-Speed-Maintenance-Complexity-Deployment-Size-Flexibility for Updates-Use Case
+Pre-install in Build/Container	Fast	Moderate	Medium	Low	Most production apps
+Blob Storage with Lazy Download	Moderate	High	Small	High	Validators updated often
+Containerization	Fast	High	Medium to Large	Medium	Complex apps, container workflows
+Azure Functions / Microservice	Fast	High	Small	High	Microservices or serverless setups
+
+Steps for Approach 1
+
+After Build and Deploy:
+
+In Startup.sh, once the app is deployed in Azure web app before the app starts we try to install all the guards required. Sample startup.sh is as follows.
+The major initial challenge was with the Guardrails API key to Download from the Hub. 
+Add the Guardrails API Key in environmental variables, later export in startup.sh and use it for login. 
+The second set of issues comes with the headless approach (non-interactive way) of adding the API key. Use the below command for guardrails Configure
+guardrails --help will list all available commands for reference.
+
+# === Guardrails Setup ===
+echo "Setting Guardrails environment variables with CLI token"
+export GUARDRAILS_API_KEY   # Your existing variable
+export GUARDRAILS_CLI_TOKEN="${GUARDRAILS_API_KEY}"   # Guardrails CLI checks this variable
+
+echo "Guardrails API Key is set: ${GUARDRAILS_API_KEY:0:4}****"
+
+# This now sets token via env, not needing a prompt
+guardrails configure --disable-metrics --disable-remote-inferencing --token "${GUARDRAILS_CLI_TOKEN}"
+
+echo "Installing Guardrails Hub validators"
+guardrails hub install hub://guardrails/detect_jailbreak
+guardrails hub install hub://guardrails/toxic_language
+guardrails hub install hub://guardrails/secrets_present
+guardrails hub install hub://guardrails/guardrails_pii
+
+Results:
+The app is stalled as we run into Timeout issue. Before the below error the login unsuccessful error will be there if the API key is expired or --disable-metrics and --disable-remote-inferencing is not not provided.
+As they are required to update set of questions asked before API key inputs.
+
+2025-08-01T16:08:57.888175991Z   import pkg_resources
+2025-08-01T16:08:59.929814104Z 
+2025-08-01T16:08:59.929855036Z             Login successful.
+2025-08-01T16:08:59.929860897Z 
+2025-08-01T16:08:59.929863870Z             Get started by installing our RegexMatch validator:
+2025-08-01T16:08:59.929866975Z             https://hub.guardrailsai.com/validator/guardrails_ai/regex_match
+2025-08-01T16:08:59.929870044Z 
+2025-08-01T16:08:59.929873145Z             You can install it by running:
+2025-08-01T16:08:59.929875944Z             guardrails hub install hub://guardrails/regex_match
+2025-08-01T16:08:59.929878803Z 
+2025-08-01T16:08:59.929881423Z             Find more validators at https://hub.guardrailsai.com
+2025-08-01T16:08:59.929884299Z             
+2025-08-01T16:09:01.432732008Z Installing Guardrails Hub validators
+2025-08-01T16:09:10.072845047Z /tmp/8ddd1136cbcfff7/antenv/lib/python3.12/site-packages/guardrails/hub/install.py:6: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+2025-08-01T16:09:10.072883903Z   import pkg_resources
+2025-08-01T16:09:11.092159060Z Installing hub://guardrails/detect_jailbreak...
+
+During Build and Deploy:
+
+With the below modified customgptapp2.yml file the Build is successful in 20 mins, however it took more than 1 hour for deployment and the deployment failed
+Due to the app size increased from 14 MB to 6.7 GB (~7GB) and the allowed RAM is 3GB for the web app. Here the guardrail API has to be set as a secret under Repository settings.
+
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+
+name: Build and deploy Python app to Azure Web App - customgptapp2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python version
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+      
+      - name: Install dependencies
+        run: |
+          source venv/bin/activate
+          pip install -r requirements.txt
+          
+      - name: Guardrails install validators (from Hub)
+        env:
+          GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
+          GUARDRAILS_CLI_TOKEN: ${{ secrets.GUARDRAILS_API_KEY }}
+        run: |
+          source venv/bin/activate
+          pip install guardrails-ai
+          # Authenticate CLI
+          guardrails configure --disable-metrics --disable-remote-inferencing --token "${GUARDRAILS_API_KEY}"
+          # Install validators into local venv, now part of deployment artifact!
+          guardrails hub install hub://guardrails/detect_jailbreak
+          guardrails hub install hub://guardrails/toxic_language
+          guardrails hub install hub://guardrails/secrets_present
+          guardrails hub install hub://guardrails/guardrails_pii
+
+      - name: Zip artifact for deployment
+        # Include venv so installed hub packages go to production!
+        run: zip -r release.zip . -x "venv/*/__pycache__/*"
+
+      - name: Upload artifact for deployment jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-app
+          path: |
+            release.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: 'Production'
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: python-app
+
+      - name: Unzip artifact for deployment
+        run: unzip release.zip
+
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'customgptapp2'
+          slot-name: 'Production'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_65DFE814F19B4CCDB75CDA886F89C02D }}
+
+
+Approach 2 and 3
+
+For Containerization and using Blob storage below is the discussion and point gathered.
+
+Containerization:
+
+<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
+
+# okay lets go for containerization, as we might target for a container kind of usecases in future, I haven't done this before, guide me in step by step manner and help me achieve the container setup
+
+Here's a step-by-step guide to containerizing your Guardrails-based Python app and deploying it to Azure App Service using a Docker container. This approach helps you avoid large ZIP deployments, long startup delays, and provides full control of your environment.
+
+### Step 1: Prepare Your Application for Containerization
+
+Make sure your app (e.g., FastAPI + Guardrails) has:
+
+- A `requirements.txt` listing all Python dependencies including `guardrails-ai`
+- Your app entry point (`main.py` or similar)
+- Any other necessary files and Guardrails validator setups as part of the repo (no large pre-installed venv)
+
+
+### Step 2: Create a Dockerfile
+
+In your repo root, create a file named `Dockerfile` with contents like this example:
+
+```dockerfile
+# Use the official Python base image (ensure matching version, here 3.12)
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    GUARDRAILS_API_KEY=${GUARDRAILS_API_KEY} \
+    GUARDRAILS_CLI_TOKEN=${GUARDRAILS_API_KEY}
+
+# Set working directory in container
+WORKDIR /app
+
+# Copy only requirements first for better cache use
+COPY requirements.txt .
+
+# Install system dependencies (if needed by guardrails or other libs)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+# Copy the rest of app code
+COPY . .
+
+# Configure Guardrails (non-interactive with token) and install validators
+RUN guardrails configure --disable-metrics --disable-remote-inferencing --token "$GUARDRAILS_API_KEY" \
+    && guardrails hub install hub://guardrails/detect_jailbreak \
+    && guardrails hub install hub://guardrails/arize_dataset_embeddings \
+    && guardrails hub install hub://guardrails/toxic_language \
+    && guardrails hub install hub://guardrails/secrets_present \
+    && guardrails hub install hub://guardrails/guardrails_pii
+
+# Expose port that your app runs on (e.g., 8000)
+EXPOSE 8000
+
+# Command to run your FastAPI app with Gunicorn + Uvicorn workers
+CMD ["gunicorn", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "main:app", "--bind", "0.0.0.0:8000"]
+```
+
+**Note:**
+
+- Replace `main:app` with your actual app module and FastAPI app object.
+- Environment variables like `GUARDRAILS_API_KEY` will be passed securely at deployment.
+
+
+### Step 3: Build and Test Your Docker Image Locally
+
+From the terminal in your project directory:
+
+```bash
+# Build the Docker image (tag it with your app name)
+docker build -t customgptapp2:latest .
+
+# Run locally while passing your Guardrails API key as env var for testing
+docker run -e GUARDRAILS_API_KEY="your_guardrails_key_here" -p 8000:8000 customgptapp2:latest
+```
+
+Check that the app is accessible at `http://localhost:8000` and behaves as expected.
+
+### Step 4: Push Your Docker Image to a Container Registry
+
+You need a container registry to store your image:
+
+- Use [Azure Container Registry (ACR)](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-intro) or
+- Use [GitHub Container Registry (GHCR)](https://github.com/features/packages)
+
+Example for Azure Container Registry:
+
+1. Create an Azure Container Registry (ACR) via portal or Azure CLI:
+```bash
+az acr create --resource-group YOUR_RESOURCE_GROUP --name YOUR_ACR_NAME --sku Basic
+```
+
+2. Log in to ACR
+```bash
+az acr login --name YOUR_ACR_NAME
+```
+
+3. Tag your image for ACR:
+```bash
+docker tag customgptapp2:latest YOUR_ACR_NAME.azurecr.io/customgptapp2:latest
+```
+
+4. Push the image:
+```bash
+docker push YOUR_ACR_NAME.azurecr.io/customgptapp2:latest
+```
+
+
+### Step 5: Create an Azure App Service for Containers and Deploy
+
+1. Create an App Service plan which supports Linux containers:
+```bash
+az appservice plan create --name YOUR_PLAN_NAME --resource-group YOUR_RESOURCE_GROUP --is-linux --sku B1
+```
+
+2. Create the Web App with container settings pointing to your container image:
+```bash
+az webapp create --resource-group YOUR_RESOURCE_GROUP --plan YOUR_PLAN_NAME --name YOUR_WEBAPP_NAME --deployment-container-image-name YOUR_ACR_NAME.azurecr.io/customgptapp2:latest
+```
+
+3. Configure App Settings for Guardrails API keys and Docker registry credentials:
+
+- In Azure Portal, go to your App Service > Configuration, add:
+    - `GUARDRAILS_API_KEY` (your API key)
+    - `GUARDRAILS_CLI_TOKEN` (usually same as API key)
+- For private ACR images, set these app settings or use Azure Managed Identity for pull access plus:
+
+```bash
+az webapp config container set --resource-group YOUR_RESOURCE_GROUP --name YOUR_WEBAPP_NAME --docker-registry-server-url https://YOUR_ACR_NAME.azurecr.io --docker-registry-server-user <username> --docker-registry-server-password <password>
+```
+
+
+### Step 6: Automate with GitHub Actions (Optional)
+
+You can add a workflow that builds the Docker image, pushes it to your container registry, and triggers deployment:
+
+```yaml
+name: Build and Deploy Docker Container to Azure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: YOUR_ACR_NAME.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build image
+        run: |
+          docker build -t YOUR_ACR_NAME.azurecr.io/customgptapp2:latest .
+
+      - name: Push image
+        run: |
+          docker push YOUR_ACR_NAME.azurecr.io/customgptapp2:latest
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: YOUR_WEBAPP_NAME
+          images: YOUR_ACR_NAME.azurecr.io/customgptapp2:latest
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+```
+
+Be sure to store registry credentials and Azure publish profile securely in GitHub Secrets.
+
+### Summary
+
+1. **Write a Dockerfile** that installs your app and Guardrails with validators.
+2. **Build and test Docker image locally.**
+3. **Push the Docker image to Azure Container Registry (or GHCR).**
+4. **Create App Service using this image and configure environment variables.**
+5. **(Optional) Automate build/deployment with GitHub Actions.**
+
+This workflow gives you a reproducible, fast-starting, production-grade container deployment, fully handling your Guardrails setup.
+
+If you want, I can help you draft the actual Dockerfile or GitHub Actions based on your exact app structure. Just share your main app files or requirements!
+
+<div style="text-align: center">⁂</div>
+
+[^1]: https://docs.github.com/en/actions/how-tos/use-cases-and-examples/deploying/deploying-docker-to-azure-app-service
+
+[^2]: https://learn.microsoft.com/en-us/training/modules/deploy-run-container-app-service/
+
+[^3]: https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container
+
+[^4]: https://learn.microsoft.com/en-us/azure/app-service/configure-custom-container
+
+[^5]: https://learn.microsoft.com/de-de/azure/app-service/quickstart-custom-container
+
+[^6]: https://code.visualstudio.com/docs/containers/app-service
+
+[^7]: https://docs.azure.cn/en-us/app-service/tutorial-custom-container
+
+[^8]: https://www.youtube.com/watch?v=yjbzWq7bvNc
+
+
+BLOB:
+
+<img src="https://r2cdn.perplexity.ai/pplx-full-logo-primary-dark%402x.png" class="logo" width="120"/>
+
+# okay for now, containerization is a long way across, so lets try other approach, what about blob storage, what needs to be done there. I will evaluate based on your suggestions on the steps. Let me know what needs to be done for Blob, I will check
+
+Here’s a practical, production-friendly approach for using Azure Blob Storage to manage Guardrails validators and supporting files, which lets you avoid large deployments or slow runtime installs. This pattern helps keep your Azure App Service deployments lean while letting you update validators without redeploying your whole app.
+
+## Step-by-Step: Using Azure Blob Storage for Guardrails Validators
+
+### 1. **Set Up Azure Blob Storage**
+
+- Create a **Storage Account** in Azure Portal if you don’t have one already.
+- Add a **Blob container** (e.g., `guardrails-validators`).
+- Set access type to “private” for production (recommended for security).
+
+
+### 2. **Prepare and Upload Guardrails Validators**
+
+- **On your local machine or CI:**
+a. Create a fresh virtual environment and install all required Guardrails validators using:
+
+```
+guardrails configure --token <YOUR_KEY> --disable-metrics
+guardrails hub install hub://guardrails/detect_jailbreak
+... (add other validators)
+```
+
+b. Identify where validators were installed. For most installations, these will be inside your virtual environment’s `lib/pythonX.Y/site-packages/guardrails/hub` directory.
+c. **Zip up** the entire `guardrails/hub` directory (or the relevant subfolder/files for validators).
+d. Upload the `.zip` (e.g., `guardrails_validators.zip`) to your Azure Blob container.
+
+
+### 3. **Modify Your App/Startup Script to Download from Blob**
+
+- Install [Azure Storage Blob SDK for Python](https://pypi.org/project/azure-storage-blob/) if not included in your `requirements.txt`.
+- **At app startup:**
+    - Check if the validators exist locally (e.g., check for `guardrails/hub/detect_jailbreak`).
+    - If missing (or if you want to always update), download the validators archive from Azure Blob to a temp directory.
+    - Unzip into the site-packages or application directory as needed.
+
+
+#### Example Python snippet for download:
+
+```python
+import os
+from azure.storage.blob import BlobServiceClient
+from zipfile import ZipFile
+
+BLOB_CONNECTION_STRING = os.getenv("AZURE_BLOB_CONNECTION_STRING")
+CONTAINER_NAME = "guardrails-validators"
+BLOB_NAME = "guardrails_validators.zip"
+LOCAL_VALIDATORS_ARCHIVE = "/tmp/guardrails_validators.zip"
+TARGET_DIR = "/path/to/venv/lib/python3.10/site-packages/guardrails/hub"
+
+def download_and_extract_blob():
+    if not os.path.exists(TARGET_DIR):
+        blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
+        blob_client = blob_service_client.get_container_client(CONTAINER_NAME).get_blob_client(BLOB_NAME)
+        with open(LOCAL_VALIDATORS_ARCHIVE, "wb") as f:
+            f.write(blob_client.download_blob().readall())
+        with ZipFile(LOCAL_VALIDATORS_ARCHIVE, 'r') as zip_ref:
+            zip_ref.extractall(TARGET_DIR)
+```
+
+- **Call this function in your startup hook or before the app needs the validators.**
+- Set `AZURE_BLOB_CONNECTION_STRING` as an environment variable in Azure App Service for security.
+
+
+### 4. **Keep Your Deployment Lean**
+
+- **Do NOT** bundle large validator files in your ZIP/package.
+- Always exclude large or redundant files in `.zip` deploy steps with proper exclusion flags or manifest.
+
+
+### 5. **Validator Updates**
+
+- To update a validator, just build a new archive and upload to Blob Storage. The next app restart will fetch the latest.
+
+
+## Pros, Cons, and Production Readiness
+
+**Pros:**
+
+- Keeps deployment artifact small; only downloads what’s needed on startup.
+- You can update validators on Blob without redeploying the app.
+- Centralized management of validator binaries/assets.
+
+**Cons:**
+
+- **First startup includes network latency** to download/extract the archive (typically a few seconds to a minute, depending on size and network).
+- Need robust error handling if Blob download fails (fallback logic or error).
+
+**Production Tips:**
+
+- Use a [managed identity](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/overview) or secure access policy for Blob Storage, not a shared key.
+- Cache downloaded validators locally, and implement a version/checksum check to download only if changed.
+- Log download and extraction steps for operational transparency.
+
+
+## When to Use This Pattern
+
+- You have large binaries or models (validators) not convenient to bundle in ZIP deployments.
+- You need to update Guardrails validators independently of full app deployments.
+- You want to optimize Azure App Service cold starts and stay within deployment size limits.
+
+If you need, I can provide a full sample startup script or FastAPI middleware for this workflow. Let me know if you want example code tailored to your app structure or more details on robust error handling!
+
+OVERALL CHAT:
+
+https://www.perplexity.ai/search/hey-now-i-got-the-logs-2025-08-JHFSJTQYTEKjo5FiyoHByg

@@ -14,7 +14,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -30,28 +30,12 @@ jobs:
           source venv/bin/activate
       
       - name: Install dependencies
-        run: |
-          source venv/bin/activate
-          pip install -r requirements.txt
-          
-      - name: Guardrails install validators (from Hub)
-        env:
-          GUARDRAILS_API_KEY: ${{ secrets.GUARDRAILS_API_KEY }}
-          GUARDRAILS_CLI_TOKEN: ${{ secrets.GUARDRAILS_API_KEY }}
-        run: |
-          source venv/bin/activate
-          pip install guardrails-ai
-          # Authenticate CLI
-          guardrails configure --disable-metrics --disable-remote-inferencing --token "${GUARDRAILS_API_KEY}"
-          # Install validators into local venv, now part of deployment artifact!
-          guardrails hub install hub://guardrails/detect_jailbreak
-          guardrails hub install hub://guardrails/toxic_language
-          guardrails hub install hub://guardrails/secrets_present
-          guardrails hub install hub://guardrails/guardrails_pii
+        run: pip install -r requirements.txt
+        
+      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
-        # Include venv so installed hub packages go to production!
-        run: zip -r release.zip . -x "venv/*/__pycache__/*"
+        run: zip release.zip ./* -r
 
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
@@ -59,6 +43,7 @@ jobs:
           name: python-app
           path: |
             release.zip
+            !venv/
 
   deploy:
     runs-on: ubuntu-latest
@@ -76,6 +61,7 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
+      
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         id: deploy-to-webapp
