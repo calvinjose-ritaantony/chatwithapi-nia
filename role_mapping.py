@@ -1,6 +1,8 @@
 import os
 import logging
 from dotenv import load_dotenv # For environment variables (recommended)
+from data.useCaseSpecificOutputs import StructuredSpendingAnalysis
+import json
 
 load_dotenv()  # Load environment variables from .env file
 
@@ -132,7 +134,12 @@ NIA your current usecase is <usecase>{usecase_name}</usecase> and you are requir
 NIA you are now ready to take over and answer the user queries.
 
 """
+#Structured Response for Use cases
+# Step 1: Get the schema as a Python dict
+schema_dict_spending_pattern = StructuredSpendingAnalysis.model_json_schema()
 
+# Step 2: Convert it into a pretty JSON string
+schema_string_spending_pattern = json.dumps(schema_dict_spending_pattern, indent=2)
 # Prompt 2 - Function Calling - Azure open AI
 # FUNCTION_CALLING_SYSTEM_MESSAGE = """
 #      You are an extremely powerful AI agent with analytic skills in extracting context and deciding agent to call functions to get context data, based on the previous conversations to support an e-commerce store AI agent.
@@ -849,19 +856,24 @@ REASONING STEPS:
 2. Determine if this is a follow-up to previous conversation
 3. Calculate key metrics (total spend, average order, frequency)
 4. Look for trends or patterns in the spending data
-5. Consider what format would best present this information
-6. Determine what level of detail and insight is appropriate
+5. Apply time series analysis to forecast future purchases
+6. Calculate confidence intervals for predictions
+7. Determine what level of detail and insight is appropriate
 
 RETRIEVED DATA:
 {sources}
 
 FORMAT YOUR RESPONSE:
-- Address the user's specific question about spending patterns
-- Include calculated metrics: total spending, average order value, purchase frequency
-- Note recent purchase activity and any observable trends
-- Present information in the user's preferred format or the most appropriate format (tables, charts, paragraphs)
-- For multiple customers, provide comparative analysis if relevant
-- Offer meaningful insights about the spending patterns, not just raw data
+Return a valid JSON response that can be parsed as an instance of this class:
+{schema_string_spendingPattern}
+
+IMPORTANT:
+- Include forecasted values in the chart data with clear distinction between historical and predicted values
+- Extend the chart to show both actual and projected spending
+- Only return valid JSON
+- Do not include explanatory text outside the JSON
+- Skip any empty sections
+- Keep under 800 tokens
 
 Remember to focus on patterns and trends, not just isolated data points.""",
         "fields_to_select": ["user_name", "product_id", "product_description", "product_category", "brand", "price", "order_id", "order_date", "order_total", "payment_method", "payment_status"],

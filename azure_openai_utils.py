@@ -26,7 +26,7 @@ from standalone_programs.image_analyzer import analyze_image
 from dotenv import load_dotenv # For environment variables (recommended)
 
 from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases
-from role_mapping import ALL_FIELDS, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME, USE_CASE_CONFIG, CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, get_role_information
+from role_mapping import ALL_FIELDS, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME, USE_CASE_CONFIG, CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, get_role_information, schema_string_spending_pattern
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
@@ -253,6 +253,9 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             main_response = "No Response from Model. Please try again."
         else:            
             main_response, follow_up_questions, total_tokens = await extract_json_content(response)
+            # Fix: If main_response is empty after extracting JSON, use the original model_response
+            if not main_response and model_response:
+                main_response = model_response
     
     except (APIConnectionError) as retryable_ex:
         logger.warning(f"Retryable error: {type(retryable_ex).__name__} - {retryable_ex}", exc_info=True)
@@ -283,6 +286,9 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
                 main_response = "No Response from Model. Please try again."
             else:
                 main_response, follow_up_questions, total_tokens = await extract_json_content(response)
+                # Fix: If main_response is empty after extracting JSON, use the original model_response
+                if not main_response and model_response:
+                    main_response = model_response
 
         except Exception as final_ex:
             logger.error(f"Retry also failed: {final_ex}", exc_info=True)
@@ -323,17 +329,28 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             )
            
             model_response = response.choices[0].message.content
+            logger.info(f"Alternate Model Response is {response}")
             if model_response is None or model_response == "":
                 raise ValueError("No Response from Model. Please try again.")
-            return await extract_json_content(response)
+            main_response, follow_up_questions, total_tokens = await extract_json_content(response)
+            # Fix: If main_response is empty after extracting JSON, use the original model_response
+            if not main_response and model_response:
+                main_response = model_response
+            return main_response, follow_up_questions, total_tokens
 
         success = False
         for alt_model in models_to_try:
             try:
+                model_response = "No Response from Model"
+                main_response = ""
+                total_tokens = 0
+                follow_up_questions = []
+                reasoning = ""
                 main_response, follow_up_questions, total_tokens = await call_model(
                     client, alt_model, conversations, model_configuration
                 )
                 logger.info(f"Succeeded with alternate model '{alt_model}'")
+                logger.info(f"Main Response: {main_response}, Follow Up Questions: {follow_up_questions}, Total Tokens: {total_tokens}")
                 success = True
                 break
 
@@ -969,6 +986,15 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
                                                 query=user_message, 
                                                 sources=image_response, 
                                                 additional_sources=[]) + FORMAT_RESPONSE_AS_MARKDOWN
+                            })
+    elif use_case == "ANALYZE_SPENDING_PATTERNS":
+        conversations.append({
+                                "role": "user",
+                                "content" : USER_PROMPT.format(
+                                                query=user_message, 
+                                                sources=context_information, 
+                                                additional_sources=additional_context_information,
+                                                schema_string_spendingPattern = schema_string_spending_pattern)
                             })
     elif context_information is not None and context_information != "" and len(context_information) > 0:
         conversations.append({

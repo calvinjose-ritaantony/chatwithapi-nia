@@ -132,7 +132,14 @@ async def get_gpts(request: Request, user: Annotated[dict, Depends(azure_scheme)
 
     return JSONResponse({"gpts": gpts}, status_code=200)
 
+
+# @router.post("/test-toxic")
+# @toxic_language_guard(response_arg_name="reply")
+# async def test_route():
+#     return {"reply": "I hate you, you idiot!"}  # deliberately toxic
+
 @router.post("/chat/{gpt_id}/{gpt_name}")
+# @guardrails_validation(prompt_arg="user_message", response_key="response")
 async def chat(request: Request, gpt_id: str, gpt_name: str, user: Annotated[dict, Depends(azure_scheme)], user_message: str = Form(...), params: str = Form(...), uploadedImage: UploadFile = File(...)):
     if not user_message:
         return JSONResponse({"error": "Missing 'user_message' in request body."}, status_code=400)

@@ -256,15 +256,20 @@ async def extract_json_content(response):
     total_tokens: int = response.usage.total_tokens
     main_response: str = response.choices[0].message.content
     follow_up_questions=[]
+    logger.info(f"Raw response: {response}")
+    logger.info(f"Main response: {main_response}")
 
     # Find content between json``` and ```
     json_match = re.search(r'```json\n(.*?)```', main_response, re.DOTALL)
-    
+    logger.info(f"json_match: {json_match}")
     if json_match:
         try:
             # Parse the extracted content as JSON
-            follow_up_questions = json.loads(json_match.group(1).strip())
-            follow_up_questions = follow_up_questions["follow_up_questions"]
+            follow_up_data = json.loads(json_match.group(1).strip())
+            if "follow_up_questions" in follow_up_data:
+                follow_up_questions = follow_up_data["follow_up_questions"]
+            else:
+                follow_up_questions = []
 
              # Remove the entire JSON block from main_response
             main_response = main_response.replace(json_match.group(0), '').strip()
