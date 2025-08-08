@@ -30,6 +30,7 @@ from azure_openai_utils import call_maf
 from routes.ilama32_routes import router as ilama32_router
 from routes.gpt_routes_secured import router as gpt_router_secured
 from routes.gpt_routes_unsecured import router as gpt_router_unsecured
+from routes.gpt_routes_secured_websockets import router as gpt_router_websocket
 from auth_config import azure_scheme
 
 from standalone_programs.simple_gpt import get_conversation
@@ -128,8 +129,10 @@ app = FastAPI(
 
 # Include the routers
 app.include_router(ilama32_router, prefix="/ilama32", tags=["ilama32"])
-app.include_router(gpt_router_secured, dependencies=[Security(azure_scheme, scopes=["access_as_user"])])
+#app.include_router(gpt_router_secured, dependencies=[Security(azure_scheme, scopes=["access_as_user"])])
+app.include_router(gpt_router_secured, tags=["secured"])
 app.include_router(gpt_router_unsecured, prefix="/backend", tags=["backend"])
+#app.include_router(gpt_router_websocket, prefix="/ws", tags=["ws"])
 #app.include_router(gpt_router, dependencies=[Security(verify_jwt_token, scopes=["access_as_user"])])
 
 # Set up Jinja2 for templating

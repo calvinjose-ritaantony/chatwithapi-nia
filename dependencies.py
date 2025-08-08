@@ -25,7 +25,7 @@ class NiaAzureOpenAIClient:
             await cls._instance._initialize()
         return cls._instance
 
-    async def _initialize(self):
+    async def _initialize(self) -> AsyncAzureOpenAI:
         endpoints = self._collect_env_endpoints()
 
         for endpoint in endpoints:

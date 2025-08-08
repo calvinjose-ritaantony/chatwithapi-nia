@@ -2,19 +2,19 @@ import os
 import base64
 import logging
 import json
-import re
-from fastapi.responses import StreamingResponse
-import requests
 import datetime
 import tiktoken
 
-from fastapi import UploadFile
+from fastapi.responses import StreamingResponse
+from fastapi import UploadFile, WebSocket
 from openai import APIConnectionError, AsyncAzureOpenAI, AzureOpenAI, BadRequestError, RateLimitError
 from azure.storage.blob import BlobServiceClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 
+from ConnectionManager import ConnectionManager
 from data.GPTData import GPTData
 from data.ModelConfiguration import ModelConfiguration
+from dependencies import NiaAzureOpenAIClient
 
 from azure.identity import DefaultAzureCredential, ClientSecretCredential
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
@@ -30,6 +30,7 @@ from role_mapping import ALL_FIELDS, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLI
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
+from thinking_process import REASONING_DATA
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
@@ -81,7 +82,7 @@ blob_service_client = BlobServiceClient(f"https://{AZURE_BLOB_STORAGE_ACCOUNT_NA
     credential=AZURE_BLOB_STORAGE_ACCESS_KEY
 )
 
-async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: str, stream: bool):
+async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: str, stream: bool) -> AsyncAzureOpenAI:
     #logger.info(f"delimiter: {delimiter} \ndefault_model_name: {default_model_name} \necomm_model_name: {ecomm_model_name} \nazure_endpoint: {azure_endpoint} \napi_key: {api_key} \napi_version: {api_version} \nsearch_endpoint: {search_endpoint} \nsearch_key: {search_key} \nsearch_index: {search_index}")
     
     # # Establish connection to Azure Open AI
@@ -97,7 +98,7 @@ async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: s
     #     api_version=api_version)
 
     # Create the singleton instance
-    nia_azure_client = await NiaAzureOpenAIClient().create()
+    nia_azure_client: AsyncAzureOpenAI = await NiaAzureOpenAIClient().create()
 
     # Retrieve the client
     client = nia_azure_client.get_azure_client()
@@ -202,7 +203,7 @@ async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list
 
         conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
 
-async def get_completion_from_messages_standard(gpt: GPTData, model_configuration, conversations, use_case, role_information):
+async def get_completion_from_messages_standard(gpt: GPTData, model_configuration, conversations, use_case, role_information, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     model_response = "No Response from Model"
     main_response = ""
     total_tokens = 0
@@ -225,7 +226,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             else:
                 #extra_body = get_azure_search_parameters(search_endpoint, search_index, search_key, role_information, ecomm_rag_demo_index_fields)
                 pass
-        
+
         response = await client.chat.completions.create(
             model=gpt["name"],
             messages=conversations,
@@ -242,6 +243,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             #n=2,
             #reasoning_effort="low", # available for o1,o3 models only
             #timeout=30,
+            #service_tier="auto" # default, flex 
         )
         model_response = response.choices[0].message.content
         logger.info(f"Full Model Response is {response}")
@@ -254,10 +256,11 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
     
     except (APIConnectionError) as retryable_ex:
         logger.warning(f"Retryable error: {type(retryable_ex).__name__} - {retryable_ex}", exc_info=True)
-
-        from dependencies import NiaAzureOpenAIClient
         logger.info(f"Retrying with next endpoint")
-        client = await NiaAzureOpenAIClient().retry_with_next_endpoint()
+        
+        client: AsyncAzureOpenAI = await NiaAzureOpenAIClient().retry_with_next_endpoint()
+        await socket_manager.send_json({"response" : f"Encountered APIConnectionError : Retrying with next endpoint. <br> {client._azure_endpoint} ", "type": "thinking"}, websocket)
+        
         try:
             response = await client.chat.completions.create(
                 model=gpt["name"],
@@ -285,12 +288,12 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             logger.error(f"Retry also failed: {final_ex}", exc_info=True)
             total_tokens = len(token_encoder.encode(str(conversations)))
             main_response = f"All Azure OpenAI endpoints failed. Please try again later.\n\n Exception Details : {str(final_ex)}"
+            await socket_manager.send_json({"response" : main_response, "type": "thinking"}, websocket)
 
     except (RateLimitError) as retryable_ex:
         logger.warning(f"Retryable error: {type(retryable_ex).__name__} - {retryable_ex}", exc_info=True)
-
-        from dependencies import NiaAzureOpenAIClient
         logger.info(f"Retrying with next models")
+        
         # Gather all retry model names from environment variables
         models_to_try = []
         i = 1
@@ -303,7 +306,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             i += 1
 
         # Helper to call the model
-        async def call_model(client, model_name, conversations, model_configuration):
+        async def call_model(client: AsyncAzureOpenAI, model_name, conversations, model_configuration: ModelConfiguration):
             response = await client.chat.completions.create(
             model=model_name,
             messages=conversations,
@@ -318,6 +321,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             stream=False,
             user=gpt["user"]
             )
+           
             model_response = response.choices[0].message.content
             if model_response is None or model_response == "":
                 raise ValueError("No Response from Model. Please try again.")
@@ -350,7 +354,9 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
         # If we exhausted the loop with no success, go to the next subscription
         if not success:
             logger.info("All models on this endpoint exhausted – switching subscription")
-            client = await NiaAzureOpenAIClient().retry_with_next_endpoint()
+            await socket_manager.send_json({"response" : f"Encountered RateLimitError : All models on this endpoint exhausted – switching subscription ", "type": "thinking"}, websocket)
+
+            client: AsyncAzureOpenAI = await NiaAzureOpenAIClient().retry_with_next_endpoint()
 
             try:
                 # Start again with the original model on the new endpoint
@@ -376,6 +382,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
         main_response = f"Error occurred while fetching model response: \n\n" + str(e)
     finally:
          # Log the response to database
+        await socket_manager.send_json({"response" : f"Adding the conversation to memory", "type": "thinking"}, websocket)
         await saveAssistantResponse(main_response, gpt, conversations)
         
     return {
@@ -477,7 +484,7 @@ async def get_completion_from_messages_stream(gpt: GPTData, model_configuration,
                     i += 1
 
                 # Helper to call the model
-                async def call_model(client, model_name, conversations, model_configuration):
+                async def call_model(client: AsyncAzureOpenAI, model_name, conversations, model_configuration: ModelConfiguration):
                     response = await client.chat.completions.create(
                         model=model_name,
                         messages=conversations,
@@ -1063,7 +1070,7 @@ async def processResponse(response):
 
     return main_response, follow_up_questions, total_tokens
 
-async def generate_response(streaming_response: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, uploadedFile: UploadFile = None):
+async def generate_response(streaming_response: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, uploadedFile: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     has_image = False
     previous_conversations_count = 6
     proceed = False
@@ -1077,6 +1084,11 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     role_information, model_configuration = await get_role_information(use_case) if use_rag else ("AI Assistant", model_configuration)
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
 
+    # Fetch the thinking process for the selected use case
+    thinking_process_for_usecases: list = REASONING_DATA[use_case]
+    logger.info(thinking_process_for_usecases)
+    await socket_manager.send_json({"response" : thinking_process_for_usecases[0], "type": "thinking"}, websocket)
+
     # Step 2 : Get last conversation history (6 messages) for the given gpt_id and model_name
     chat_history = await fetch_chat_history(gpt["_id"], model_name, limit=6) # use limit=-1 if needing the entire conversation history to be passed to the model
     
@@ -1088,6 +1100,8 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     # Step 4: get token count for the conversation 
     token_data = await get_token_count(model_name, gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
     logger.info(f"Token Calculation : stage 1 {token_data}")
+
+    await socket_manager.send_json({"response" : thinking_process_for_usecases[1], "type": "thinking"}, websocket)
     
     # Get previous conversation for context
     #previous_conversations = get_previous_context_conversations(conversation_list=conversations, previous_conversations_count=previous_conversations_count)
@@ -1103,16 +1117,21 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     })
     
     #has_image = (uploadedFile is not None and uploadedFile.filename != "blob" and uploadedFile.filename != "dummy")
-    file_extension = os.path.splitext(uploadedFile.filename)[1].lower()
-    if file_extension in ALLOWED_IMAGE_EXTENSIONS:
-        has_image = True
-    
-    if file_extension in [".pdf"]:
-        use_rag = True
-        await handle_upload_files(gpt["_id"], gpt, [uploadedFile])
+    logger.info(f"Uploaded File {uploadedFile}")
+    if len(uploadedFile) != 0:
+        if uploadedFile.filename != "blob" and uploadedFile.filename != "dummy":
+            file_extension = os.path.splitext(uploadedFile.filename)[1].lower()
+            if file_extension in ALLOWED_IMAGE_EXTENSIONS:
+                has_image = True
+            
+            if file_extension in [".pdf"]:
+                use_rag = True
+                await handle_upload_files(gpt["_id"], gpt, [uploadedFile])
 
     logger.info(f"use_rag is {use_rag} and has_image is {has_image}")
     logger.info(f"Uploaded File {uploadedFile}")
+
+    await socket_manager.send_json({"response" : thinking_process_for_usecases[2], "type": "thinking"}, websocket)
 
     # Step 6: Handle images/attachments if any or the user query
     if not use_rag and has_image:
@@ -1183,12 +1202,15 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     token_data = await get_token_count(model_name, gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
     logger.info(f"Token Calculation : stage 2 (Before generating response) {token_data}")
 
+    await socket_manager.send_json({"response" : thinking_process_for_usecases[3], "type": "thinking"}, websocket)
+
     # Azure OpenAI API call
     if proceed == True:
         if streaming_response:
             response = await get_completion_from_messages_stream(gpt, model_configuration, conversations, use_case, role_information)
         else:
-            response = await get_completion_from_messages_standard(gpt, model_configuration, conversations, use_case, role_information)
+            await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
+            response = await get_completion_from_messages_standard(gpt, model_configuration, conversations, use_case, role_information, websocket, socket_manager)
 
     # Sometimes model returns "null" which is not supported by python
     # the null gets into the chat history and ruins all the subsequent calls to the model
@@ -1197,6 +1219,8 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         response = "No response from model"
     else:
         pass
+
+    await socket_manager.send_json({"response" : "Response Generated", "type": "thinking"}, websocket)
         
     logger.info(f"Conversation : {conversations}")
     logger.info(f"Tokens in the conversation {len(token_encoder.encode(str(conversations)))}")

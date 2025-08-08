@@ -5,15 +5,17 @@ import base64
 from pathlib import Path
 from bson import ObjectId
 import urllib.parse
-from typing import Annotated
+from typing import Annotated, Dict, List
 
 from fastapi import APIRouter, Cookie, Request, Security, UploadFile, Body, File, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi import WebSocket, WebSocketDisconnect
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 from azure.identity import ClientSecretCredential
 from azure.core.exceptions import AzureError
 
 from pymongo.errors import DuplicateKeyError
+from ConnectionManager import ConnectionManager
 from auth_msal import get_current_user
 from data.GPTData import GPTData
 from data.InputPrompt import InputPrompt
@@ -22,9 +24,11 @@ from gpt_utils import handle_upload_files, create_folders
 from azure_openai_utils import generate_response
 from mongo_service import fetch_chat_history_for_use_case, get_gpt_by_id, create_new_gpt, get_gpts_for_user, update_gpt, delete_gpt, delete_gpts, delete_chat_history, fetch_chat_history, get_usecases, update_gpt_instruction, get_collection, get_prompts, update_prompt, delete_prompt
 from prompt_utils import PromptValidator
+from app_config import socket_manager
 
 from bson import ObjectId
-from dotenv import load_dotenv # For environment variables (recommended)
+from dotenv import load_dotenv
+
 
 conversations = []
 use_cases = []
@@ -146,6 +150,95 @@ async def chat(request: Request, gpt_id: str, gpt_name: str,  user_message: str 
     except HTTPException as he:
         logger.error(f"Error while getting response from Model. Details : \n {he.detail}", exc_info=True)
         return JSONResponse({"error": f"Error while getting response from Model. Details : \n {he.detail}"}, status_code=500)
+
+# WebSocket endpoint for chat
+@router.websocket("/ws/chat/{gpt_id}/{gpt_name}")
+async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str):
+    await socket_manager.connect(websocket, gpt_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            
+            try:
+                user_message = data.get("user_message", "")
+                if not user_message:
+                    await socket_manager.send_json({"error": "Missing 'user_message' in request.", "type" : "error"}, websocket)
+                    continue
+                
+                params = data.get("params", {})
+                uploadedImage = data.get("uploadedImage")  # This would be base64 encoded image
+                
+                logger.info(f"Chat request received with GPT ID: {gpt_name} \n user message: {user_message} \n params: {params}")
+                gpt = await get_gpt_by_id(gpt_id)
+                await socket_manager.send_json({"response": f"Chat request received with GPT ID: {gpt_name} <br> user message: {user_message}"}, websocket)
+
+                model_configuration = ModelConfiguration(**params)
+                logger.info(f"Received GPT data: {gpt} \n Model Configuration: {model_configuration}")
+
+                if gpt is None:
+                    await socket_manager.send_json({"error": "GPT not found."}, websocket)
+                    continue
+                
+                streaming_response = False
+                response = await generate_response(streaming_response, user_message, model_configuration, gpt, uploadedImage, socket_manager, websocket)
+                
+                await socket_manager.send_json({
+                    "response": response['model_response'], 
+                    "total_tokens": response['total_tokens'] if response['total_tokens'] else 0, 
+                    "follow_up_questions": response['follow_up_questions'],
+                    "type": "chat_response"
+                }, websocket)
+            except HTTPException as he:
+                logger.error(f"Error while getting response from Model. Details : \n {he.detail}", exc_info=True)
+                await socket_manager.send_json({"error": f"Error while getting response from Model. Details : \n {he.detail}", "type" : "error"}, websocket)
+            except Exception as e:
+                logger.error(f"Error: {str(e)}", exc_info=True)
+                await socket_manager.send_json({"error": str(e), "type" : "error"}, websocket)
+    except WebSocketDisconnect as we:
+        logger.error(f"Exception while socket handling {we.detail}", exc_info=True)
+        socket_manager.disconnect(websocket, gpt_id)
+
+# WebSocket endpoint for streaming chat
+@router.websocket("/ws/chat/stream/{gpt_id}/{gpt_name}")
+async def ws_chat_stream(websocket: WebSocket, gpt_id: str, gpt_name: str):
+    await socket_manager.connect(websocket, gpt_id)
+    try:
+        while True:
+            data = await websocket.receive_json()
+            
+            try:
+                user_message = data.get("user_message", "")
+                if not user_message:
+                    await socket_manager.send_json({"error": "Missing 'user_message' in request.", "type" : "error"}, websocket)
+                    continue
+                
+                params = data.get("params", {})
+                uploadedImage = data.get("uploadedImage")  # This would be base64 encoded image
+                loggedUser = data.get("loggedUser")
+                
+                logger.info(f"Chat request received with GPT ID: {gpt_name} \n user message: {user_message}\n params: {params}")
+                logger.info(f"Logged User: {loggedUser}")
+                
+                gpt = await get_gpt_by_id(gpt_id)
+
+                model_configuration = ModelConfiguration(**params)
+                logger.info(f"Received GPT data: {gpt} \n Model Configuration: {model_configuration}")
+
+                if gpt is None:
+                    await socket_manager.send_json({"error": "GPT not found."}, websocket)
+                    continue
+                
+                streaming_response = True
+                async for chunk in await generate_response(streaming_response, user_message, model_configuration, gpt, uploadedImage, socket_manager, websocket):
+                    await socket_manager.send_json({"chunk": chunk, "type" : "stream_chunk"}, websocket) 
+            except HTTPException as he:
+                logger.error(f"Error while getting response from Model. Details : \n {he.detail}", exc_info=True)
+                await socket_manager.send_json({"error": f"Error while getting response from Model. Details : \n {he.detail}", "type" : "error"}, websocket)
+            except Exception as e:
+                logger.error(f"Error: {str(e)}", exc_info=True)
+                await socket_manager.send_json({"error": str(e), "type" : "error"}, websocket)
+    except WebSocketDisconnect:
+        socket_manager.disconnect(websocket, gpt_id)
 
 @router.post("/update_instruction/{gpt_id}/{gpt_name}/{usecase_id}")
 async def update_instruction(request: Request, gpt_id: str, gpt_name: str, usecase_id: str):

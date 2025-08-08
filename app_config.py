@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 from azure.storage.blob import BlobServiceClient
 
+from ConnectionManager import ConnectionManager
+
 load_dotenv()  # Load environment variables from .env file
 
 APP_SCOPE = os.getenv("APP_SCOPE")
@@ -32,3 +34,7 @@ blob_service_client = BlobServiceClient(f"https://{AZURE_BLOB_STORAGE_ACCOUNT_NA
 
 # Tells the Flask-session extension to store sessions in the filesystem
 SESSION_TYPE = "filesystem"
+
+
+# Create connection manager
+socket_manager = ConnectionManager()

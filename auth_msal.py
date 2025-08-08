@@ -41,7 +41,30 @@ async def verify_jwt_token(credentials: HTTPAuthorizationCredentials = Depends(b
             detail=f"Invalid authentication credentials: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+async def verify_jwt_access_token(access_token: str):
+    jwks = await get_jwks()
+    try:
+        payload = jwt.decode(
+            access_token,
+            jwks,
+            algorithms=["RS256"],
+            audience=CLIENT_ID,
+            issuer=f"{AUTHORITY}/v2.0"
+        )
+        print(f"Decoded payload: {payload}")  # Debugging line to print the decoded payload
+        return payload
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid authentication credentials: {str(e)}",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 async def get_current_user(payload: dict = Security(verify_jwt_token)):
+    print(f"Payload {dict(payload)}")  # Debugging line to print the payload
+    return dict(payload)
+
+async def get_current_user_ws(payload: dict = Security(verify_jwt_access_token)):
     print(f"Payload {dict(payload)}")  # Debugging line to print the payload
     return dict(payload)
