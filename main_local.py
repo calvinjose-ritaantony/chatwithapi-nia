@@ -30,7 +30,6 @@ from azure_openai_utils import call_maf
 from routes.ilama32_routes import router as ilama32_router
 from routes.gpt_routes_secured import router as gpt_router_secured
 from routes.gpt_routes_unsecured import router as gpt_router_unsecured
-from routes.gpt_routes_secured_websockets import router as gpt_router_websocket
 from auth_config import azure_scheme
 
 from standalone_programs.simple_gpt import get_conversation

@@ -76,7 +76,7 @@ class IgnoreChangeDeductedFilter(logging.Filter):
 logger = logging.getLogger()
 logger.addFilter(IgnoreChangeDeductedFilter())
 
-# FastAPI Configuration for NIA
+# FastAPI Configuration
 # CORS configuration (update with your frontend origin)
 origins = [
             "http://localhost", 
@@ -94,27 +94,25 @@ origins = [
             "https://niaapp.azurewebsites.net",
             "https://niaapp.azurewebsites.net:443"
             "https://niaapp2.azurewebsites.net",
-            "https://niaapp2.azurewebsites.net:443",
-            "https://niacustomgpt-fybhf3hmfbgba7dp.southindia-01.azurewebsites.net/",
-            "https://niacustomgpt-fybhf3hmfbgba7dp.southindia-01.azurewebsites.net:443",
+            "https://niaapp2.azurewebsites.net:443"
           ]
 
 middleware = [
-#  Middleware(HTTPSRedirectMiddleware),
- Middleware(
-     SessionMiddleware, 
-     secret_key=CONFIG["SESSION_SECRET_KEY"], 
-     same_site="lax",  # Important for cross-site requests
-     https_only=True,  # Only require HTTPS in production, # Important for security - only set cookies over HTTPS
-     max_age=1*24*60*60  # 1 day session expiry
- ),
- Middleware(
-     CORSMiddleware, 
-     allow_origins=origins, 
-     allow_credentials=True,  # Allow cookies to be sent
-     allow_methods=["*"], 
-     allow_headers=["*"]
- )
+    #  Middleware(HTTPSRedirectMiddleware),
+    Middleware(
+        SessionMiddleware, 
+        secret_key=CONFIG["SESSION_SECRET_KEY"], 
+        same_site="lax",  # Important for cross-site requests
+        https_only=True,  # Only require HTTPS in production, # Important for security - only set cookies over HTTPS
+        max_age=1*24*60*60  # 1 day session expiry
+    ),
+    Middleware(
+        CORSMiddleware, 
+        allow_origins=origins, 
+        allow_credentials=True,  # Allow cookies to be sent
+        allow_methods=["*"], 
+        allow_headers=["*"]
+    )
 ]
 
 app = FastAPI(
@@ -130,8 +128,10 @@ app = FastAPI(
 
 # Include the routers
 app.include_router(ilama32_router, prefix="/ilama32", tags=["ilama32"])
-app.include_router(gpt_router_secured, dependencies=[Security(azure_scheme, scopes=["access_as_user"])])
+#app.include_router(gpt_router_secured, dependencies=[Security(azure_scheme, scopes=["access_as_user"])])
+app.include_router(gpt_router_secured, tags=["secured"])
 app.include_router(gpt_router_unsecured, prefix="/backend", tags=["backend"])
+#app.include_router(gpt_router_websocket, prefix="/ws", tags=["ws"])
 #app.include_router(gpt_router, dependencies=[Security(verify_jwt_token, scopes=["access_as_user"])])
 
 # Set up Jinja2 for templating
@@ -230,7 +230,8 @@ async def generic_exception_handler(request: Request, exception: Exception):
             content={"error": "An internal server error occurred", "error_id": error_id}
         )
 
-# --- Authentication Routes ---
+
+
 @app.get("/login")
 async def login(request: Request):
     logger.info(f"Request URL {request.url}")

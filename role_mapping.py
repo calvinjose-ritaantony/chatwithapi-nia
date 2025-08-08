@@ -877,7 +877,7 @@ IMPORTANT:
 
 Remember to focus on patterns and trends, not just isolated data points.""",
         "fields_to_select": ["user_name", "product_id", "product_description", "product_category", "brand", "price", "order_id", "order_date", "order_total", "payment_method", "payment_status"],
-        "document_count": 20,
+        "document_count": 10,
         "index_name": NIA_SEARCH_INDEX_NAME,
         "semantic_configuration_name": NIA_SEMANTIC_CONFIGURATION_NAME,
         "role_information": "analyst",

@@ -3,457 +3,457 @@
   "name": "SEARCHING_ORDERS",
   "description": "SEARCHING_ORDERS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with order retrieval, I can help you retrieve order details based on the provided order ID, username or order date. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the search parameter (order ID, username or order date) provided in the query.\n2. Retrieve relevant order details based on identified parameters including product description, quantity and delivery status.\n3. Cross-reference additional details like price, brand and delivery date for completeness.\n4. Summarize all relevant information about orders found including any relevant status updates or actions required such as pending deliveries or return eligibility.\n\nOur output will be a clear summary of the retrieved orders(s). If multiple orders match your query criteria we will display them in a structured table format with all relevant details.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\" ",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
-  "prompts": [
+	"prompts": [
 		{
 		  "role": "customer",
-		  "prompt": "Can you help me find the details for my order with ID 12345?",
-		  "key": "K001",
-		  "title": "Order Search",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer support agent",
-		  "prompt": "Please provide the order details for user JohnDoe, focusing on the delivery status.",
-		  "key": "K002",
-		  "title": "Status Check",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer",
-		  "prompt": "I placed an order on July 26, 2024. Can you retrieve the details for me?",
-		  "key": "K003",
-		  "title": "Date Lookup",
-		  "user": "Default"
-		},
-		{
-		  "role": "delivery driver",
-		  "prompt": "I need the delivery address and contact number for order ID 67890.",
-		  "key": "K004",
-		  "title": "Address Verify",
-		  "user": "Default"
-		},
-		{
-		  "role": "warehouse manager",
-		  "prompt": "Can you list all orders from July 27, 2024, that are pending delivery?",
-		  "key": "K005",
-		  "title": "Pending List",
-		  "user": "Default"
-		}
-]
-},
-{
-  "name": "SUMMARIZE_PRODUCT_REVIEWS",
-  "description": "SUMMARIZE_PRODUCT_REVIEWS",
-  "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with summarizing customer reviews and ratings for specific products based on internal datasets, I can help you extract key insights from the data. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify and extract customer ratings from the dataset to compute the average rating for the product.\n2. Analyze customer reviews focusing on frequently mentioned feedback themes like product quality, price, and performance.\n3. Detect common patterns in reviews such as recurring praise (positive) or complaints (negative), especially regarding features, price or brand reputation.\n4. Summarize all key insights providing an overall sentiment analysis highlighting top features and areas for improvement.\n\nOur output will include a title summarizing product reviews and ratings along with relevant details including number of products sold, average customer rating and price of the product. We will also display top 3 positive and negative aspects in a structured table format.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\" ",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
-  "index_name":"order-dataset-index",
-  "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
-  "prompts": [
-		{
-		  "role": "product manager",
-		  "prompt": "Could you summarize the customer reviews and ratings for the 4K Webcam?",
-		  "key": "K001",
-		  "title": "Review Summary",
-		  "user": "Default"
-		},
-		{
-		  "role": "marketing analyst",
-		  "prompt": "What insights can you provide from recent customer reviews for the Logitech 4K Webcam?",
-		  "key": "K002",
-		  "title": "Review Insights",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer",
-		  "prompt": "I'm interested in the 4K Webcam. What do other customers think about it?",
-		  "key": "K003",
-		  "title": "Customer Opinion",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales representative",
-		  "prompt": "What are the most common complaints regarding the 4K Webcam?",
-		  "key": "K004",
-		  "title": "Common Complaints",
-		  "user": "Default"
-		},
-		{
-		  "role": "quality assurance engineer",
-		  "prompt": "Please analyze customer reviews for the 4K Webcam and highlight recurring issues.",
-		  "key": "K005",
-		  "title": "Issue Analysis",
-		  "user": "Default"
-		}
-]
-},
-{
-  "name": "TRACK_ORDERS",
-  "description": "TRACK_ORDERS",
-  "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with tracking the delivery, return and refund processes of orders, I can help you retrieve current status information for specified orders. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the order ID or customer details to track the process. If multiple orders are involved, handle them sequentially.\n2. Retrieve current status of delivery, return and refund for specified order(s).\n3. Cross-reference status with relevant order and product details.\n4. Summarize all tracking information including current status along with any next steps or actions required.\n\nOur output will include a summary of all tracking information for each order retrieved including delivery status, return status and refund status. If multiple orders match your query criteria we will display them in a structured format with all relevant details.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
-  "index_name":"order-dataset-index",
-  "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
-"prompts": [
-		{
-		  "role": "customer",
-		  "prompt": "Can you tell me the current status of my order for the 4K Webcam with ID OR00024?",
+		  "prompt": "Can you check the delivery status of my Dell Laptop order with ID OR00054? The order total was $400.",
 		  "key": "K001",
 		  "title": "Order Status",
 		  "user": "Default"
 		},
 		{
-		  "role": "customer support agent",
-		  "prompt": "Track the order for John Doe regarding the 4K Webcam.",
+		  "role": "customer",
+		  "prompt": "I placed an order for a Logitech 4K Webcam on July 25, 2024, with order ID OR00024. When will it be delivered?",
 		  "key": "K002",
-		  "title": "Order Track",
-		  "user": "Default"
-		},
-		{
-		  "role": "shipping department",
-		  "prompt": "What is the delivery status for the order placed on July 25, 2024?",
-		  "key": "K003",
 		  "title": "Delivery Status",
 		  "user": "Default"
 		},
 		{
 		  "role": "customer",
-		  "prompt": "I haven't received my refund for order OR00037. Can you check its status?",
-		  "key": "K004",
-		  "title": "Refund Check",
+		  "prompt": "Track my Gaming Monitor order (OR00082) shipped to Sydney. The order value was $500.",
+		  "key": "K003",
+		  "title": "Shipment Tracking",
 		  "user": "Default"
 		},
 		{
-		  "role": "finance department",
-		  "prompt": "Please provide a report of all orders refunded in the last month.",
+		  "role": "customer support",
+		  "prompt": "Customer with order ID OR00037 requesting status update on their 4K Webcam refund.",
+		  "key": "K004",
+		  "title": "Refund Status",
+		  "user": "Default"
+		},
+		{
+		  "role": "delivery agent",
+		  "prompt": "Need delivery address confirmation for Bluetooth Speaker order OR00006 going to London.",
 		  "key": "K005",
-		  "title": "Refund Report",
+		  "title": "Address Verification",
 		  "user": "Default"
 		}
-]
+	  ]
+},
+{
+  "name": "SUMMARIZE_PRODUCT_REVIEWS",
+  "description": "SUMMARIZE_PRODUCT_REVIEWS",
+  "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with summarizing customer reviews and ratings for specific products based on internal datasets, I can help you extract key insights from the data. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify and extract customer ratings from the dataset to compute the average rating for the product.\n2. Analyze customer reviews focusing on frequently mentioned feedback themes like product quality, price, and performance.\n3. Detect common patterns in reviews such as recurring praise (positive) or complaints (negative), especially regarding features, price or brand reputation.\n4. Summarize all key insights providing an overall sentiment analysis highlighting top features and areas for improvement.\n\nOur output will include a title summarizing product reviews and ratings along with relevant details including number of products sold, average customer rating and price of the product. We will also display top 3 positive and negative aspects in a structured table format.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\" ",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
+  "index_name":"order-dataset-index",
+  "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
+  "prompts": [
+    {
+      "role": "customer",
+      "prompt": "Show me customer reviews for the Dell Laptop, particularly focusing on performance and battery life.",
+      "key": "K001",
+      "title": "Performance Reviews",
+      "user": "Default"
+    },
+    {
+      "role": "product manager",
+      "prompt": "Analyze customer feedback for the JBL Bluetooth Speaker, highlighting comments about sound quality and connectivity.",
+      "key": "K002",
+      "title": "Feature Feedback",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "What do customers say about the ASUS Gaming Monitor's display quality and gaming performance?",
+      "key": "K003",
+      "title": "Gaming Reviews",
+      "user": "Default"
+    },
+    {
+      "role": "quality team",
+      "prompt": "Compile all negative reviews for the Logitech 4K Webcam related to video quality and connection issues.",
+      "key": "K004",
+      "title": "Issue Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "marketing team",
+      "prompt": "Summarize customer ratings and reviews for the Wacom Graphic Tablet from professional users.",
+      "key": "K005",
+      "title": "Professional Feedback",
+      "user": "Default"
+    }
+  ]
+},
+{
+  "name": "TRACK_ORDERS",
+  "description": "TRACK_ORDERS",
+  "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with tracking the delivery, return and refund processes of orders, I can help you retrieve current status information for specified orders. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the order ID or customer details to track the process. If multiple orders are involved, handle them sequentially.\n2. Retrieve current status of delivery, return and refund for specified order(s).\n3. Cross-reference status with relevant order and product details.\n4. Summarize all tracking information including current status along with any next steps or actions required.\n\nOur output will include a summary of all tracking information for each order retrieved including delivery status, return status and refund status. If multiple orders match your query criteria we will display them in a structured format with all relevant details.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
+  "index_name":"order-dataset-index",
+  "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
+	"prompts": [
+		{
+		  "role": "customer",
+		  "prompt": "Can you check the delivery status of my Dell Laptop order with ID OR00054? The order total was $400.",
+		  "key": "K001",
+		  "title": "Order Status",
+		  "user": "Default"
+		},
+		{
+		  "role": "customer",
+		  "prompt": "I placed an order for a Logitech 4K Webcam on July 25, 2024, with order ID OR00024. When will it be delivered?",
+		  "key": "K002",
+		  "title": "Delivery Status",
+		  "user": "Default"
+		},
+		{
+		  "role": "customer",
+		  "prompt": "Track my Gaming Monitor order (OR00082) shipped to Sydney. The order value was $500.",
+		  "key": "K003",
+		  "title": "Shipment Tracking",
+		  "user": "Default"
+		},
+		{
+		  "role": "customer support",
+		  "prompt": "Customer with order ID OR00037 requesting status update on their 4K Webcam refund.",
+		  "key": "K004",
+		  "title": "Refund Status",
+		  "user": "Default"
+		},
+		{
+		  "role": "delivery agent",
+		  "prompt": "Need delivery address confirmation for Bluetooth Speaker order OR00006 going to London.",
+		  "key": "K005",
+		  "title": "Address Verification",
+		  "user": "Default"
+		}
+	  ]
 },
 {
   "name": "TRACK_ORDERS_TKE",
   "description": "TRACK_ORDERS_TKE",
   "instructions": "\"You are an order tracking specialist for an elevator and related products e-commerce platform. When users inquire about their orders, identify the specific order(s) using 'yourReferenceId' or 'solutionId'. For each order, provide the following details:\nOpportunity: Describe the sales opportunity related to the order.\nProduct: Specify the product ordered.\nOrder Quantity: State the quantity of the product ordered.\nStatus: Provide the current status of the order (e.g., processing, shipped, delivered).\nCreate Date: Mention the date the order was created.\nOrganization: Identify the organization associated with the order.\nSolution Description: Offer a brief description of the solution provided.\nTotal Customer Sale Price: State the total sale price for the order.\nDealer Number: Include the dealer number associated with the order.\nSolution Org Label: Provide the label for the solution organization.\nOrganization Type: Specify the type of organization (e.g., dealer, customer).\nNo of Days to Drawings Expire: Mention how many days are left before the drawings expire.\nSolution ID: Reference the unique solution ID for the order.\nOrder Class: Indicate the class of the order (e.g., standard, expedited).\nPresent the information in a clear, structured format for each order. After your main response, include three relevant follow-up questions preceded by the delimiter '######'.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-tke-rag-index",
   "semantic_configuration_name":"NIA_TKE_RAG_SEMANTIC_CONFIGURATION",
-"prompts": [
+  "prompts": [
 		{
 		  "role": "customer",
-		  "prompt": "What is the status of my order with reference ID ABC1234?",
+		  "prompt": "Can you check the status of my AlturaPlatinum elevator order with reference ID PML018? I need to know when it will be delivered.",
 		  "key": "K001",
-		  "title": "Reference Check",
+		  "title": "Order Status Check",
 		  "user": "Default"
 		},
 		{
-		  "role": "sales representative",
-		  "prompt": "Can you provide details for the order associated with solution ID XYZ7890?",
+		  "role": "dealer",
+		  "prompt": "I need to track the status of all FlowX (RP01-CU) orders for EcoLift Solutions. Can you provide their current status and delivery dates?",
 		  "key": "K002",
-		  "title": "Solution Details",
+		  "title": "Multiple Order Track",
 		  "user": "Default"
 		},
 		{
 		  "role": "project manager",
-		  "prompt": "What is the order quantity and delivery date for reference ID DEF5678?",
+		  "prompt": "What's the current status of the S200 Government elevator orders that were placed for the Federal Building Access Upgrade project with reference ID FED-852?",
 		  "key": "K003",
-		  "title": "Order Details",
+		  "title": "Project Order Status",
 		  "user": "Default"
 		},
 		{
-		  "role": "installation technician",
-		  "prompt": "I need the solution description for solution ID STU4321.",
+		  "role": "installation team",
+		  "prompt": "Need delivery date confirmation for order reference CORP-852 for the Corporate Office Elevator Installation project. When can we expect the H300 Italy units?",
 		  "key": "K004",
-		  "title": "Solution Info",
+		  "title": "Delivery Confirmation",
 		  "user": "Default"
 		},
 		{
-		  "role": "finance department",
-		  "prompt": "What is the total sale price for all orders linked to dealer number 123456?",
+		  "role": "sales representative",
+		  "prompt": "Please provide a status update for all AlturaGold orders that are currently marked as 'Sales Order Created', including their expected delivery dates.",
 		  "key": "K005",
-		  "title": "Price Summary",
+		  "title": "Product Line Status",
 		  "user": "Default"
 		}
-]
+  ]
 },
 {
   "name": "ANALYZE_SPENDING_PATTERNS",
   "description": "ANALYZE_SPENDING_PATTERNS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with analyzing customer spending patterns based on internal datasets, I can help you generate a summary of their purchase frequency and recency. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the customer details (username, email or phone number) to analyze spending patterns.\n2. Retrieve order details for specified customer including product descriptions, quantities and prices.\n3. Analyze frequency of purchases, total spending and recency of orders to determine customer's spending behavior.\n4. Summarize all key insights highlighting average order value, purchase frequency and recent activity.\n\nOur output will include a summary of the customer's spending patterns including total spendings along with purchase frequency and recency of orders placed. We will also display key insights such as average order value, total orders placed and recent purchase activity.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
-		{
-		  "role": "marketing analyst",
-		  "prompt": "Can you analyze the spending patterns of customers who purchased the 4K Webcam?",
-		  "key": "K001",
-		  "title": "Spending Analysis",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer support agent",
-		  "prompt": "What is the average order value for users who bought the 4K Webcam?",
-		  "key": "K002",
-		  "title": "Order Value",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales manager",
-		  "prompt": "Identify the top spending customers who purchased the 4K Webcam in the last quarter.",
-		  "key": "K003",
-		  "title": "Top Spenders",
-		  "user": "Default"
-		},
-		{
-		  "role": "finance department",
-		  "prompt": "Analyze spending patterns for customers who frequently buy webcam accessories.",
-		  "key": "K004",
-		  "title": "Pattern Analysis",
-		  "user": "Default"
-		},
-		{
-		  "role": "product manager",
-		  "prompt": "What product categories are most frequently purchased by customers who buy the 4K Webcam?",
-		  "key": "K005",
-		  "title": "Category Trends",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "marketing analyst",
+      "prompt": "Analyze the purchasing behavior of customers who bought the Dell Laptop, including their subsequent accessory purchases.",
+      "key": "K001",
+      "title": "Purchase Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "sales analyst",
+      "prompt": "What's the average spending pattern of customers who initially purchased the ASUS Gaming Monitor in their first transaction?",
+      "key": "K002",
+      "title": "Customer Value",
+      "user": "Default"
+    },
+    {
+      "role": "business analyst",
+      "prompt": "Compare spending patterns between customers who buy gaming accessories versus professional equipment like the Wacom Graphic Tablet.",
+      "key": "K003",
+      "title": "Category Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "marketing manager",
+      "prompt": "Analyze the correlation between Logitech 4K Webcam purchases and other home office equipment spending.",
+      "key": "K004",
+      "title": "Cross-Category Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "finance analyst",
+      "prompt": "Review the spending trends of customers who make purchases over $1000, like those buying the Canon Digital Camera with accessories.",
+      "key": "K005",
+      "title": "High-Value Analysis",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "CUSTOMER_COMPLAINTS",
   "description": "CUSTOMER_COMPLAINTS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with handling customer complaints and feedback, I can help you address specific issues raised by customers. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the customer complaint or feedback details provided in the query.\n2. Analyze nature of complaint focusing on specific issue raised by the customer.\n3. Retrieve relevant order, product or customer details to address complaint effectively.\n4. Provide resolution or response to customer's complaint ensuring clarity and empathy in communication.\n\nOur output will include acknowledging the customer's complaint and expressing empathy for their concerns along with providing clear resolution addressing all specific concerns raised by them. We ensure that our response is professional, courteous and focused on resolving any issues they have to their satisfaction.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
-		{
-		  "role": "customer support agent",
-		  "prompt": "A customer with order ID OR00024 is reporting a problem with the 4K Webcam. How should we address this?",
-		  "key": "K001",
-		  "title": "Problem Resolution",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer",
-		  "prompt": "I would like to file a complaint regarding the 4K Webcam I purchased.",
-		  "key": "K002",
-		  "title": "File Complaint",
-		  "user": "Default"
-		},
-		{
-		  "role": "manager",
-		  "prompt": "Can you analyze customer complaints related to the 4K Webcam?",
-		  "key": "K003",
-		  "title": "Complaint Analysis",
-		  "user": "Default"
-		},
-		{
-		  "role": "quality assurance",
-		  "prompt": "Identify recurring complaints about the 4K Webcam from customer feedback.",
-		  "key": "K004",
-		  "title": "Issue Pattern",
-		  "user": "Default"
-		},
-		{
-		  "role": "legal department",
-		  "prompt": "Please summarize any legal complaints received regarding the 4K Webcam.",
-		  "key": "K005",
-		  "title": "Legal Summary",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "customer support",
+      "prompt": "Customer reporting video quality issues with their Logitech 4K Webcam purchased on July 25 (Order ID: OR00024). Need immediate resolution.",
+      "key": "K001",
+      "title": "Technical Issue",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "My Dell Laptop (Order ID: OR00054) arrived with a damaged screen. Total order value was $400, need replacement or refund.",
+      "key": "K002",
+      "title": "Product Damage",
+      "user": "Default"
+    },
+    {
+      "role": "support agent",
+      "prompt": "Customer claims JBL Bluetooth Speaker (Order ID: OR00006) has connectivity issues and battery doesn't last as advertised.",
+      "key": "K003",
+      "title": "Performance Issue",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "Ordered ASUS Gaming Monitor but received wrong model. Order ID: OR00082, paid $500. Requesting immediate resolution.",
+      "key": "K004",
+      "title": "Wrong Product",
+      "user": "Default"
+    },
+    {
+      "role": "support supervisor",
+      "prompt": "Multiple complaints about delayed delivery of Wacom Graphic Tablet orders. Need to investigate shipping process.",
+      "key": "K005",
+      "title": "Delivery Issues",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "PRODUCT_COMPARISON",
   "description": "PRODUCT_COMPARISON",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with comparing products based on specified attributes, I can help you retrieve detailed information for each product and highlight key differences between them. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the products to be compared based on product ID or description from query. If query doesn't specify products we will ask user to provide relevant details.\n2. Retrieve detailed information for each product including descriptions, brand, price and specifications.\n3. Compare products based on specified attributes such as price, features and stock level.\n4. Highlight all key differences and similarities between the selected products.\n5. Summarize comparison in clear structured format making it easy for customer to understand distinctions.\n\nOur output will include a detailed comparison of selected products along with key attributes such as price, features and stock level presented in a structured format highlighting all differences and similarities.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
-		{
-		  "role": "customer",
-		  "prompt": "What are the features and specifications of the 4K Webcam?",
-		  "key": "K001",
-		  "title": "Product Specs",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales representative",
-		  "prompt": "Can you provide the price and availability of the 4K Webcam?",
-		  "key": "K002",
-		  "title": "Price Check",
-		  "user": "Default"
-		},
-		{
-		  "role": "e-commerce website",
-		  "prompt": "Display detailed product information for the Logitech 4K Webcam on the product page.",
-		  "key": "K003",
-		  "title": "Product Info",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer support agent",
-		  "prompt": "A customer is asking about the warranty information for the 4K Webcam.",
-		  "key": "K004",
-		  "title": "Warranty Info",
-		  "user": "Default"
-		},
-		{
-		  "role": "product manager",
-		  "prompt": "Gather all specifications and details for the Logitech 4K Webcam.",
-		  "key": "K005",
-		  "title": "Spec Details",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "customer",
+      "prompt": "Can you compare the features and prices of the Dell Laptop versus the ASUS Gaming Monitor?",
+      "key": "K001",
+      "title": "Tech Comparison",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "What are the main differences between the JBL Bluetooth Speaker and the Jabra Wireless Earbuds in terms of sound quality and battery life?",
+      "key": "K002",
+      "title": "Audio Comparison",
+      "user": "Default"
+    },
+    {
+      "role": "sales representative",
+      "prompt": "Compare the specifications and customer ratings of the Logitech 4K Webcam with other webcams in our inventory.",
+      "key": "K003",
+      "title": "Product Category Comparison",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "How does the Wacom Graphic Tablet compare to similar tablets in terms of pressure sensitivity and active area?",
+      "key": "K004",
+      "title": "Feature Comparison",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Compare the warranty coverage and return policies for the Canon Digital Camera versus similar models in our store.",
+      "key": "K005",
+      "title": "Policy Comparison",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "CUSTOMIZED_RECOMMENDATIONS",
   "description": "CUSTOMIZED_RECOMMENDATIONS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to provide customized product recommendations based on users' past purchases or orders, I can help you generate recommendations for each user separately. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the user based on username, email or phone number.\n2. Retrieve the user’s past orders including product details such as quantities, brand and order date etc.\n3. Retrieve other users' past orders who have similar product orders including product name, brand and country.\n4. List down all relevant information for each order by the user along with products bought by other users who have purchased same products as the user.\n5. Analyze both the user’s past orders and other users’ past orders to identify patterns and preferences such as frequently purchased categories or brands.\n6. Generate recommendations based on identified patterns suggesting products in similar categories or from preferred brands/products from other users’ past orders.\n7. Summarize recommended products with descriptions and relevance to previous purchases.\n\nOur output will include a list of customized product recommendations for each individual customer along with reasons for our recommendation.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
-"prompts": [
-		{
-		  "role": "customer",
-		  "prompt": "Can you recommend products similar to the 4K Webcam based on my previous purchases?",
-		  "key": "K001",
-		  "title": "Similar Products",
-		  "user": "Default"
-		},
-		{
-		  "role": "marketing team",
-		  "prompt": "Generate personalized product recommendations for users who purchased the Logitech 4K Webcam.",
-		  "key": "K002",
-		  "title": "Personal Recommendations",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales representative",
-		  "prompt": "What products would you suggest to a customer who bought the 4K Webcam?",
-		  "key": "K003",
-		  "title": "Product Suggestions",
-		  "user": "Default"
-		},
-		{
-		  "role": "e-commerce platform",
-		  "prompt": "Show personalized recommendations for user 'John Doe' based on their order history.",
-		  "key": "K004",
-		  "title": "History Recommendations",
-		  "user": "Default"
-		},
-		{
-		  "role": "product manager",
-		  "prompt": "Analyze purchase history to identify potential cross-selling opportunities for the 4K Webcam.",
-		  "key": "K005",
-		  "title": "Cross Sell",
-		  "user": "Default"
-		}
-]
+ "prompts": [
+    {
+      "role": "system",
+      "prompt": "Analyze purchase history of customer Emily Smith who bought a Dell Laptop (OR00128) and recommend compatible accessories within $200.",
+      "key": "K001",
+      "title": "Accessory Recommendations",
+      "user": "Default"
+    },
+    {
+      "role": "sales representative",
+      "prompt": "Customer Michael Brown purchased ASUS Gaming Monitor (OR00054). Suggest gaming peripherals based on other gamers' purchases.",
+      "key": "K002",
+      "title": "Gaming Bundle",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Customer from Germany bought Logitech 4K Webcam (OR00024). Recommend home office equipment based on regional buying patterns.",
+      "key": "K003",
+      "title": "Regional Suggestions",
+      "user": "Default"
+    },
+    {
+      "role": "marketing team",
+      "prompt": "Generate recommendations for customer who purchased JBL Bluetooth Speaker (OR00006), focusing on audio accessories under $150.",
+      "key": "K004",
+      "title": "Audio Accessories",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Analyze and recommend products for customer who bought Wacom Graphic Tablet (OR00019) based on creative professionals' buying patterns.",
+      "key": "K005",
+      "title": "Professional Tools",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "GENERATE_REPORTS",
   "description": "GENERATE_REPORTS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with generating reports on sales, revenue and inventory levels, I can help you retrieve all relevant data and compile it into comprehensive reports. How may I assist you today?\n\nHere are the steps we will follow:\n1. Retrieve sales data including total sales amount and quantities sold by date.\n2. Retrieve revenue data including revenue amounts and dates.\n3. Retrieve current inventory levels for each product.\n4. Compile all retrieved data to generate comprehensive reports on total sales, total revenue and current inventory levels.\n5. Summarize generated reports with key metrics such as total sales/revenue along with highlighting any low inventory or stock shortages.\n\nOur output will include detailed reports on all aspects of interest such as sales, revenue and inventory levels presented in structured format for easy reference.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
-		{
-		  "role": "sales manager",
-		  "prompt": "Can you generate a sales report for the 4K Webcam for the last quarter?",
-		  "key": "K001",
-		  "title": "Sales Report",
-		  "user": "Default"
-		},
-		{
-		  "role": "finance department",
-		  "prompt": "I need a revenue report for the 4K Webcam for the current fiscal year.",
-		  "key": "K002",
-		  "title": "Revenue Report",
-		  "user": "Default"
-		},
-		{
-		  "role": "inventory manager",
-		  "prompt": "Please generate a report on current inventory levels for the 4K Webcam.",
-		  "key": "K003",
-		  "title": "Inventory Report",
-		  "user": "Default"
-		},
-		{
-		  "role": "CEO",
-		  "prompt": "Provide a summary report on key performance indicators (KPIs) related to the 4K Webcam.",
-		  "key": "K004",
-		  "title": "KPI Summary",
-		  "user": "Default"
-		},
-		{
-		  "role": "marketing analyst",
-		  "prompt": "Generate a report on sales performance for the 4K Webcam during the holiday season.",
-		  "key": "K005",
-		  "title": "Holiday Performance",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "sales manager",
+      "prompt": "Generate a sales report for all Dell Laptops sold in the last quarter, including total revenue and average order value.",
+      "key": "K001",
+      "title": "Sales Report",
+      "user": "Default"
+    },
+    {
+      "role": "inventory manager",
+      "prompt": "Create a report showing stock levels and reorder requirements for all gaming peripherals, including the ASUS Gaming Monitor.",
+      "key": "K002",
+      "title": "Inventory Report",
+      "user": "Default"
+    },
+    {
+      "role": "regional manager",
+      "prompt": "Provide a comparative analysis of Logitech 4K Webcam sales across different countries, including Germany, Australia, and Japan.",
+      "key": "K003",
+      "title": "Regional Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "finance team",
+      "prompt": "Generate a report on refund rates and reasons for returns of JBL Bluetooth Speakers and Jabra Wireless Earbuds.",
+      "key": "K004",
+      "title": "Refund Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "product manager",
+      "prompt": "Create a performance report comparing sales targets vs. actual sales for all premium products above $200.",
+      "key": "K005",
+      "title": "Performance Report",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "PRODUCT_INFORMATION",
   "description": "PRODUCT_INFORMATION",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist customers with product information and availability, I can help you retrieve detailed information about the requested product along with its availability status. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the product in question based on customer query or product ID.\n2. Retrieve detailed information about the product including description, brand, price and category.\n3. Check stock level to determine availability.\n4. If the product is out of stock provide alternative recommendations or estimated restock dates if available.\n5. Summarize all relevant details about the requested product along with its current availability status.\n\nOur output will include detailed information about each requested products such as description, brand and price along with their current availability status presented clearly for easy reference.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
-"prompts": [
-		{
-		  "role": "customer",
-		  "prompt": "What are the features of the Galaxy S24?",
-		  "key": "K001",
-		  "title": "Phone Features",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales representative",
-		  "prompt": "Can you tell me the price and availability of the product with ID X123?",
-		  "key": "K002",
-		  "title": "Product Status",
-		  "user": "Default"
-		},
-		{
-		  "role": "e-commerce website",
-		  "prompt": "Display product details for the 'SmartWatch Pro' on the product page.",
-		  "key": "K003",
-		  "title": "Watch Details",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer support agent",
-		  "prompt": "A customer is asking about the warranty information for product Y456.",
-		  "key": "K004",
-		  "title": "Warranty Details",
-		  "user": "Default"
-		},
-		{
-		  "role": "product manager",
-		  "prompt": "Gather all information and specifications for the new 'TurboBlender 5000'.",
-		  "key": "K005",
-		  "title": "Blender Specs",
-		  "user": "Default"
-		}
-]
+ "prompts": [
+    {
+      "role": "customer",
+      "prompt": "What are the technical specifications of the Dell Laptop with 16GB RAM and 512GB SSD?",
+      "key": "K001",
+      "title": "Tech Specs",
+      "user": "Default"
+    },
+    {
+      "role": "sales agent",
+      "prompt": "Tell me about the battery life and charging capabilities of the JBL Bluetooth Speaker.",
+      "key": "K002",
+      "title": "Product Features",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "What resolution and frame rates does the Logitech 4K Webcam support?",
+      "key": "K003",
+      "title": "Detailed Specs",
+      "user": "Default"
+    },
+    {
+      "role": "support agent",
+      "prompt": "Provide information about the warranty and after-sales support for the ASUS Gaming Monitor.",
+      "key": "K004",
+      "title": "Support Info",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "What accessories come included with the Canon Digital Camera?",
+      "key": "K005",
+      "title": "Package Contents",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "INTELLIGENT_INCIDENT_RESOLUTION",
   "description": "INTELLIGENT_INCIDENT_RESOLUTION",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with incident resolution, I can help retrieve relevant past incidents and provide summarized solutions to expedite troubleshooting. How may I assist you today?\n Here are the steps we will follow:\n Identify the issue based on the reported incident details.\n Retrieve past incidents with similar problems and summarize their resolutions.\n Provide recommended troubleshooting steps based on historical resolutions.\n If no exact match is found, suggest an escalation path or further investigation steps.\n Summarize all relevant details, including root causes, resolutions, and preventive measures for future reference.\n Our output will include a concise summary of the reported incident, a reference to past resolutions, and a step-by-step approach to resolving the issue efficiently.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
@@ -498,7 +498,7 @@
   "name": "COMPLAINTS_AND_FEEDBACK",
   "description": "COMPLAINTS_AND_FEEDBACK",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with handling customer complaints and feedback, I can help you retrieve all relevant details about the complaint or feedback along with determining appropriate action based on type of complaint. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the customer and their complaint or feedback using provided IDs or details.\n2. Retrieve all relevant information about each complaint/feedback item including type, description, rating and status.\n3. Analyze each item to understand issue/sentiment involved.\n4. Determine appropriate action based on type of complaint such as escalation/resolution steps/acknowledgment etc.\n5. Summarize resolution/response clearly highlighting any actions taken/planned for future.\n\nOur output will include summary of all complaints/feedback items retrieved along with details of issue/status/actions taken presented in structured format.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-complaints-and-feedback-index",
   "semantic_configuration_name":"NIA_COMPLAINTS_AND_SEMANTIC_CONFIGURATION",
 "prompts": [
@@ -543,187 +543,187 @@
   "name": "HANDLE_FAQS",
   "description": "HANDLE_FAQS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with handling frequently asked questions (FAQs) from customers, I can help you retrieve all relevant information about the customer’s question and provide clear and concise answers based on FAQ entries. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify the customer’s question or topic based on their query.\n2. Retrieve relevant FAQ entry that matches customer’s question.\n3. Provide clear and accurate response based on retrieved FAQ entry.\n4. If question is not listed in FAQs escalate/suggest reaching out to customer support for further assistance.\n5. Summarize response ensuring it addresses customer’s question effectively.\n\nOur output will include a clear and concise answer to each of the customer's questions based on our available FAQs along with directing them to mail CUSTOMER_CARE@OURECOMMERCE.COM if their specific query is not covered.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-faq-index",
   "semantic_configuration_name":"NIA_FAQ_SEMANTIC_CONFIGURATION",
 "prompts": [
-		{
-		  "role": "customer",
-		  "prompt": "What is the resolution of the 4K Webcam?",
-		  "key": "K001",
-		  "title": "Camera Resolution",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer support agent",
-		  "prompt": "Is the 4K Webcam compatible with both Windows and macOS?",
-		  "key": "K002",
-		  "title": "OS Compatibility",
-		  "user": "Default"
-		},
-		{
-		  "role": "website visitor",
-		  "prompt": "Can the 4K Webcam be used for live streaming?",
-		  "key": "K003",
-		  "title": "Streaming Usage",
-		  "user": "Default"
-		},
-		{
-		  "role": "chatbot",
-		  "prompt": "How can I contact customer support for issues with the 4K Webcam?",
-		  "key": "K004",
-		  "title": "Support Contact",
-		  "user": "Default"
-		},
-		{
-		  "role": "FAQ content creator",
-		  "prompt": "Create an FAQ entry for the 4K Webcam's return policy.",
-		  "key": "K005",
-		  "title": "Return Policy",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "customer",
+      "prompt": "What's the warranty period for the Dell Laptop, and how do I claim warranty if there's an issue?",
+      "key": "K001",
+      "title": "Warranty Query",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "How do I set up the ASUS Gaming Monitor for the best gaming experience? What resolution settings are recommended?",
+      "key": "K002",
+      "title": "Setup Guide",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "What's your return policy for the Logitech 4K Webcam if I'm not satisfied with the video quality?",
+      "key": "K003",
+      "title": "Return Policy",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "How do I connect my JBL Bluetooth Speaker to multiple devices? Is multipoint connection supported?",
+      "key": "K004",
+      "title": "Technical Support",
+      "user": "Default"
+    },
+    {
+      "role": "customer",
+      "prompt": "What payment methods do you accept for orders over $1000, like the Canon Digital Camera?",
+      "key": "K005",
+      "title": "Payment Query",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "SEASONAL_SALES",
   "description": "SEASONAL_SALES",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to provide insights on seasonal sales and offer days, I can help you retrieve all relevant data about the specified period along with analyzing its impact on sales performance and customer purchasing behavior. How may I assist you today?\n\nHere are the steps we will follow:\n1. Identify seasonal sales period or offer day based on provided dates or query.\n2. Retrieve sales data for specified period including total sales amount and quantities sold.\n3. Retrieve details of offers available during the period including descriptions and discount percentages.\n4. Analyze impact of seasonal sales/offers on sales performance/customer purchasing behavior.\n5. Summarize insights highlighting key metrics such as total sale/popular products/effectiveness of offers.\n\nOur output will include summary of all insights related to each season’s sale/offer day presented in clear format highlighting key findings.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-seasonal-sales-index",
   "semantic_configuration_name":"NIA_SEASONAL_SALES_SEMANTIC_CONFIGURATION",
 "prompts": [
-		{
-		  "role": "marketing analyst",
-		  "prompt": "Can you analyze the sales performance during the holiday season?",
-		  "key": "K001",
-		  "title": "Holiday Analysis",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales manager",
-		  "prompt": "What were the top-selling products during the summer sale?",
-		  "key": "K002",
-		  "title": "Summer Performance",
-		  "user": "Default"
-		},
-		{
-		  "role": "business owner",
-		  "prompt": "How did the back-to-school promotion impact sales?",
-		  "key": "K003",
-		  "title": "School Impact",
-		  "user": "Default"
-		},
-		{
-		  "role": "inventory manager",
-		  "prompt": "Analyze sales data for the winter season to optimize inventory for next year.",
-		  "key": "K004",
-		  "title": "Winter Planning",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer service representative",
-		  "prompt": "A customer is asking about the discounts offered during the spring sale.",
-		  "key": "K005",
-		  "title": "Spring Offers",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "marketing manager",
+      "prompt": "Analyze the performance of gaming products like ASUS Gaming Monitor during the holiday season compared to regular months.",
+      "key": "K001",
+      "title": "Holiday Analysis",
+      "user": "Default"
+    },
+    {
+      "role": "sales analyst",
+      "prompt": "Compare back-to-school sales data for laptops and webcams, focusing on Dell Laptop and Logitech 4K Webcam bundles.",
+      "key": "K002",
+      "title": "School Season",
+      "user": "Default"
+    },
+    {
+      "role": "product manager",
+      "prompt": "Review the impact of summer sales promotions on JBL Bluetooth Speaker and wireless audio accessories.",
+      "key": "K003",
+      "title": "Summer Sales",
+      "user": "Default"
+    },
+    {
+      "role": "marketing coordinator",
+      "prompt": "Plan Black Friday deals for high-value items like Canon Digital Camera and Wacom Graphic Tablet.",
+      "key": "K004",
+      "title": "Black Friday",
+      "user": "Default"
+    },
+    {
+      "role": "regional manager",
+      "prompt": "Evaluate year-end clearance performance for all gaming peripherals and accessories.",
+      "key": "K005",
+      "title": "Year-End Sales",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "GENERATE_MAIL_PROMOTION",
   "description": "GENERATE_MAIL_PROMOTION",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with generating personalized emails on the latest offers, coupon codes, discounts and upcoming products, I can help you retrieve all relevant data about each product along with tailoring email content based on customer preferences and historical data. How may I assist you today?\n\nHere are the steps we will follow:\n1. Retrieve latest offers including descriptions, discount percentages and validity dates.\n2. Retrieve current coupon codes along with their details such as discount values and expiration dates.\n3. Retrieve information about upcoming products including descriptions and launch dates.\n4. Tailor email content based on customer preferences/historical data ensuring it includes all relevant details.\n5. Summarize email content to include latest offers/coupon codes/discounts/upcoming products.\n\nOur output will be a personalized email for each individual customer that includes information on the latest offers/coupon codes/discounts/upcoming products tailored specifically to their preferences.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
-		{
-		  "role": "marketing team",
-		  "prompt": "Generate a promotional email for the upcoming sale of the 4K Webcam.",
-		  "key": "K001",
-		  "title": "Sale Promotion",
-		  "user": "Default"
-		},
-		{
-		  "role": "email marketing specialist",
-		  "prompt": "Create a personalized email campaign for customers who purchased the 4K Webcam.",
-		  "key": "K002",
-		  "title": "Customer Campaign",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales representative",
-		  "prompt": "Send a targeted email to customers interested in webcam accessories.",
-		  "key": "K003",
-		  "title": "Accessory Promotion",
-		  "user": "Default"
-		},
-		{
-		  "role": "business owner",
-		  "prompt": "Announce the launch of the new 4K Webcam via email to all subscribers.",
-		  "key": "K004",
-		  "title": "Launch Announcement",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer loyalty program manager",
-		  "prompt": "Send an exclusive offer for the 4K Webcam to premium members via email.",
-		  "key": "K005",
-		  "title": "Premium Offer",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "marketing",
+      "prompt": "Create a promotional email for the Dell Laptop targeting customers who previously bought gaming accessories.",
+      "key": "K001",
+      "title": "Gaming Promotion",
+      "user": "Default"
+    },
+    {
+      "role": "marketing",
+      "prompt": "Draft an email announcing the special discount on ASUS Gaming Monitors for customers in Australia.",
+      "key": "K002",
+      "title": "Regional Offer",
+      "user": "Default"
+    },
+    {
+      "role": "marketing",
+      "prompt": "Generate a follow-up email for customers who purchased the Logitech 4K Webcam, offering complementary accessories.",
+      "key": "K003",
+      "title": "Cross-sell Campaign",
+      "user": "Default"
+    },
+    {
+      "role": "marketing",
+      "prompt": "Create a holiday season promotional email featuring the JBL Bluetooth Speaker with special bundled offers.",
+      "key": "K004",
+      "title": "Holiday Campaign",
+      "user": "Default"
+    },
+    {
+      "role": "marketing",
+      "prompt": "Design a welcome email for new customers who made their first purchase of Wacom Graphic Tablet.",
+      "key": "K005",
+      "title": "Welcome Email",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "GENERATE_MAIL_ORDERS",
   "description": "GENERATE_MAIL_ORDERS",
   "instructions": "\"Welcome! As an intelligent virtual assistant designed to assist with analyzing datasets and generating mail summarizing all orders of a user, I can help you retrieve all relevant data about each order along with mentioning special thank you note if the user has made any order worth more than 100 dollars. How may I assist you today?\n\nHere are the steps we will follow:\n1. Fetch all orders made by the user.\n2. List down product id, description, brand and price for each order.\n3. If the user has made any order worth more than 100 dollars mention special thank you note.\n\nOur output will include summary of all orders made by individual customer including details such as product descriptions/brands/prices presented in clear format.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-generate-mail-index",
   "semantic_configuration_name":"NIA_GENERATE_MAILS_SEMANTIC_CONFIGURATION",
 "prompts": [
-		{
-		  "role": "customer",
-		  "prompt": "Can you send me an email summarizing my recent orders?",
-		  "key": "K001",
-		  "title": "Order Summary",
-		  "user": "Default"
-		},
-		{
-		  "role": "order fulfillment team",
-		  "prompt": "Generate an order confirmation email for order ID 12345.",
-		  "key": "K002",
-		  "title": "Order Confirmation",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer support agent",
-		  "prompt": "Please resend the order details to customer JohnDoe@example.com.",
-		  "key": "K003",
-		  "title": "Order Resend",
-		  "user": "Default"
-		},
-		{
-		  "role": "shipping department",
-		  "prompt": "Send a shipping notification email for order ID 67890.",
-		  "key": "K004",
-		  "title": "Shipping Notice",
-		  "user": "Default"
-		},
-		{
-		  "role": "automated system",
-		  "prompt": "Generate a thank-you email for a customer's first order.",
-		  "key": "K005",
-		  "title": "Thank You",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "system",
+      "prompt": "Generate order confirmation email for Dell Laptop purchase (Order ID: OR00054) with delivery details to United States.",
+      "key": "K001",
+      "title": "Order Confirmation",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Create shipping notification email for Logitech 4K Webcam (Order ID: OR00024) with tracking details.",
+      "key": "K002",
+      "title": "Shipping Notice",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Send order status update for ASUS Gaming Monitor (Order ID: OR00082) regarding delivery delay.",
+      "key": "K003",
+      "title": "Status Update",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Generate return confirmation email for JBL Bluetooth Speaker (Order ID: OR00006) with refund details.",
+      "key": "K004",
+      "title": "Return Confirmation",
+      "user": "Default"
+    },
+    {
+      "role": "system",
+      "prompt": "Create order summary email for customer who purchased Canon Digital Camera with multiple accessories.",
+      "key": "K005",
+      "title": "Bundle Summary",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "REVIEW_BYTES",
   "description": "REVIEW_BYTES",
   "instructions": "\"You are a knowledgeable assistant specialized in watch reviews. You have access to a dataset that includes watch titles, reviews, and prices. Your goal is to answer user queries by extracting and summarizing relevant information from this dataset. \n When responding to queries, please: \n Extract Relevant Information: Use the title, review, and price from the dataset to provide concise and informative answers.\nProvide Context: If the query asks for a comparison or specific features, reference the relevant reviews and highlight key aspects.\nBe Clear and Concise: Ensure your responses are easy to understand and directly address the user's questions.\nMaintain a Professional Tone: Use an informative and engaging tone suitable for watch enthusiasts.\nClarify When Needed: If the query is ambiguous, ask for clarification to provide the most accurate response.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-review-bytes-index",
   "semantic_configuration_name":"NIA_REVIEW_BYTES_SEMANTIC_CONFIGURATION",
 "prompts": [
@@ -768,135 +768,135 @@
   "name": "DOC_SEARCH",
   "description": "DOC_SEARCH",
   "instructions": "\"You are a Document Knowledge Assistant. Your primary role is to provide accurate, contextual answers from the provided documentation.\n Core Capabilities:\n- Extract and explain relevant information from provided document excerpts\n- Generate clear, structured responses that directly address user queries\n- Provide detailed explanations while maintaining conciseness\nImportant Constraints:\n- Only use information present in the provided document excerpts\n- Acknowledge when information is incomplete or unavailable\n- Do not make assumptions beyond the documented content\n\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-pdf-index",
   "semantic_configuration_name":"nia-pdf-index-semantic-configuration",
 "prompts": [
-		{
-		  "role": "student",
-		  "prompt": "Can you find information about the specifications of the 4K Webcam in the knowledge base?",
-		  "key": "K001",
-		  "title": "Webcam Specs",
-		  "user": "Default"
-		},
-		{
-		  "role": "lawyer",
-		  "prompt": "Search for specific clauses related to product warranties in the knowledge base.",
-		  "key": "K002",
-		  "title": "Warranty Clauses",
-		  "user": "Default"
-		},
-		{
-		  "role": "researcher",
-		  "prompt": "Extract key findings from the knowledge base regarding customer feedback on the 4K Webcam.",
-		  "key": "K003",
-		  "title": "Feedback Findings",
-		  "user": "Default"
-		},
-		{
-		  "role": "engineer",
-		  "prompt": "Find the specifications for the 4K Webcam in the technical documentation.",
-		  "key": "K004",
-		  "title": "Tech Specs",
-		  "user": "Default"
-		},
-		{
-		  "role": "employee",
-		  "prompt": "Look up the company's policy on product returns in the knowledge base.",
-		  "key": "K005",
-		  "title": "Return Policy",
-		  "user": "Default"
-		}
+    {
+      "role": "procurement officer",
+      "prompt": "Find the payment terms and billing cycle details in the canteen services contract with Food Solutions Ltd. for our corporate headquarters.",
+      "key": "K001",
+      "title": "Payment Terms Search",
+      "user": "Default"
+    },
+    {
+      "role": "facility manager",
+      "prompt": "Search for food quality and hygiene standards clauses in the current cafeteria management contract with Catering Services.",
+      "key": "K002",
+      "title": "Quality Standards",
+      "user": "Default"
+    },
+    {
+      "role": "HR manager",
+      "prompt": "Locate the employee transport service agreement with Transport, specifically the pickup points and schedule commitments.",
+      "key": "K003",
+      "title": "Transport Schedule",
+      "user": "Default"
+    },
+    {
+      "role": "legal team",
+      "prompt": "Find liability and insurance clauses in the staff shuttle service contract with Commute Services, particularly regarding accident coverage.",
+      "key": "K004",
+      "title": "Liability Terms",
+      "user": "Default"
+    },
+    {
+      "role": "contract administrator",
+      "prompt": "Search for termination clauses and notice period requirements in both transport and canteen service agreements.",
+      "key": "K005",
+      "title": "Contract Terms",
+      "user": "Default"
+    }
 ]
 },
 {
   "name": "MANAGE_TICKETS",
   "description": "MANAGE_TICKETS",
   "instructions": "You are an incident management specialist. When users inquire about incidents, search the tickets dataset using the provided 'incident_id' to retrieve the relevant ticket. Analyze the ticket details including 'title', 'problem', and 'chat_log' (role [user, agent], message). Provide a comprehensive response that includes: a summary of the incident, key insights from the conversation, and actionable next steps to resolve the issue. Highlight any unresolved concerns or follow-up actions required. Maintain a professional and empathetic tone throughout your response. After your main response, provide three relevant follow-up questions preceded by the delimiter '######'.",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"nia-tke-incidents-index",
   "semantic_configuration_name":"NIA_TKE_INCIDENTS_SEMANTIC_CONFIGURATION",
 "prompts": [
-		{
-		  "role": "IT support agent",
-		  "prompt": "Can you review ticket INC001 regarding the visit creation issue and provide an update?",
-		  "key": "K001",
-		  "title": "Visit Issue",
-		  "user": "Default"
-		},
-		{
-		  "role": "support manager",
-		  "prompt": "Analyze tickets related to the MFG order creation issue and identify a solution.",
-		  "key": "K002",
-		  "title": "Order Issue",
-		  "user": "Default"
-		},
-		{
-		  "role": "customer",
-		  "prompt": "What is the status of my support ticket INC002?",
-		  "key": "K003",
-		  "title": "Ticket Status",
-		  "user": "Default"
-		},
-		{
-		  "role": "escalation team",
-		  "prompt": "Please review and address the escalated ticket INC003 regarding order status updates.",
-		  "key": "K004",
-		  "title": "Status Update",
-		  "user": "Default"
-		},
-		{
-		  "role": "reporting tool",
-		  "prompt": "Generate a report on the number of open and closed tickets this week.",
-		  "key": "K005",
-		  "title": "Ticket Report",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "support agent",
+      "prompt": "Review ticket INC001 regarding visit creation issues and check the latest agent responses and resolution status.",
+      "key": "K001",
+      "title": "Visit Creation Issue",
+      "user": "Default"
+    },
+    {
+      "role": "support manager",
+      "prompt": "Analyze incident INC002 about MFG order creation failure and provide resolution steps based on previous cases.",
+      "key": "K002",
+      "title": "Order Creation Problem",
+      "user": "Default"
+    },
+    {
+      "role": "technical support",
+      "prompt": "Check status of ticket INC003 regarding CPQ application synchronization issues and update resolution timeline.",
+      "key": "K003",
+      "title": "Sync Issue",
+      "user": "Default"
+    },
+    {
+      "role": "support agent",
+      "prompt": "Review incident INC007 about customer order creation errors and provide French language support.",
+      "key": "K004",
+      "title": "Order Error",
+      "user": "Default"
+    },
+    {
+      "role": "support supervisor",
+      "prompt": "Analyze ticket INC004 regarding model timeout issues and document the performance optimization steps taken.",
+      "key": "K005",
+      "title": "Performance Issue",
+      "user": "Default"
+    }
+  ]
 },
 {
   "name": "CREATE_PRODUCT_DESCRIPTION",
   "description": "CREATE_PRODUCT_DESCRIPTION",
-  "instructions": "\"Welcome! As an intelligent virtual assistant specialized in creating compelling product descriptions, I can help transform rough text or analyze input images to generate engaging and effective product content. \n\nHere are the steps we will follow:\n1. Analyze the provided rough text or input image to identify key product features, specifications, entity names, address, unique selling points etc.\n2. Extract relevant information such as materials, dimensions, functionality, and benefits.\n3. Organize the information into a structured, persuasive product description that highlights value propositions.\n4. Craft compelling copy that appeals to the target audience using appropriate tone and language.\n5. Include important technical specifications in a clear, easy-to-read format.\n\nOur output will be a polished, SEO-friendly product description that effectively communicates product benefits and features to potential customers. The description will be tailored to enhance conversion rates while maintaining accuracy.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
-  "gpt_id": "ObjectId('685a37a85539e872de9f1d9a')",
+  "instructions": "\"Welcome! As an intelligent virtual assistant specialized in creating compelling product descriptions, I can help transform rough text or analyze input images to generate engaging and effective product content. How may I assist you today?\n\nHere are the steps we will follow:\n1. Analyze the provided rough text or input image to identify key product features, specifications, and unique selling points.\n2. Extract relevant information such as materials, dimensions, functionality, and benefits.\n3. Organize the information into a structured, persuasive product description that highlights value propositions.\n4. Craft compelling copy that appeals to the target audience using appropriate tone and language.\n5. Include important technical specifications in a clear, easy-to-read format.\n\nOur output will be a polished, SEO-friendly product description that effectively communicates product benefits and features to potential customers. The description will be tailored to enhance conversion rates while maintaining accuracy.\n Always provide exactly three follow-up questions, clearly indicated with the delimiter '######'. If follow-up questions are not provided, the conversation will be incomplete.\"",
+  "gpt_id": "ObjectId('6895c71e8771ca0f90b96909')",
   "index_name":"order-dataset-index",
   "semantic_configuration_name":"ORDER_INDEX_SEMANTIC_CONFIG",
 "prompts": [
-		{
-		  "role": "product manager",
-		  "prompt": "Draft a product description for the 4K Webcam highlighting its features and benefits.",
-		  "key": "K001",
-		  "title": "Webcam Description",
-		  "user": "Default"
-		},
-		{
-		  "role": "marketing team",
-		  "prompt": "Create an engaging product description for the Logitech 4K Webcam for the website.",
-		  "key": "K002",
-		  "title": "Website Content",
-		  "user": "Default"
-		},
-		{
-		  "role": "content creator",
-		  "prompt": "Write a compelling product description for the 4K Webcam that emphasizes its unique selling points.",
-		  "key": "K003",
-		  "title": "Selling Points",
-		  "user": "Default"
-		},
-		{
-		  "role": "sales representative",
-		  "prompt": "What key features should be included in the product description for the 4K Webcam?",
-		  "key": "K004",
-		  "title": "Key Features",
-		  "user": "Default"
-		},
-		{
-		  "role": "e-commerce platform",
-		  "prompt": "Generate a product description for the 4K Webcam suitable for online listings.",
-		  "key": "K005",
-		  "title": "Online Listing",
-		  "user": "Default"
-		}
-]
+    {
+      "role": "content writer",
+      "prompt": "Create a detailed product description for the Dell Laptop highlighting its 15.6-inch FHD display and i7 processor specifications.",
+      "key": "K001",
+      "title": "Tech Description",
+      "user": "Default"
+    },
+    {
+      "role": "marketing",
+      "prompt": "Write a compelling product description for the JBL Bluetooth Speaker emphasizing its 20-hour battery life and waterproof features.",
+      "key": "K002",
+      "title": "Feature Description",
+      "user": "Default"
+    },
+    {
+      "role": "content writer",
+      "prompt": "Develop an SEO-friendly product description for the Logitech 4K Webcam focusing on video quality and ease of use.",
+      "key": "K003",
+      "title": "SEO Description",
+      "user": "Default"
+    },
+    {
+      "role": "marketing",
+      "prompt": "Create a product description for the ASUS Gaming Monitor highlighting its gaming-specific features and technical specifications.",
+      "key": "K004",
+      "title": "Gaming Description",
+      "user": "Default"
+    },
+    {
+      "role": "content writer",
+      "prompt": "Write a professional description for the Wacom Graphic Tablet emphasizing its pressure sensitivity and creative capabilities.",
+      "key": "K005",
+      "title": "Professional Description",
+      "user": "Default"
+    }
+  ]
 }
 ]
