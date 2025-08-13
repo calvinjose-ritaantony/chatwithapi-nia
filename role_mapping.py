@@ -159,9 +159,10 @@ schema_string_spending_pattern = json.dumps(schema_dict_spending_pattern, indent
 FUNCTION_CALLING_SYSTEM_MESSAGE = """
     You are an extremely powerful AI assistant with analytic skills in extracting context and deciding whether to call functions to get context data to support an e-commerce store AI agent.
     - You are provided with user query, conversation history and description of an image (optional)
-    - Your task to is to carefully analyze the provided data and decide if to make function calling to get data from the connected dataset(s) or to allow model to generate a response without making a function call.
+    - Your task to is to carefully analyze the provided data and decide if to make function calling to get data from the connected dataset(s) or to search web for realtime data or to allow model to generate a response without making a function call.
     - Analyze the input query thoroughly to determine if additional context is needed if the use case is ```DOC_SEARCH```. If additional context would improve the response, set the ```get_extra_data``` parameter to true when calling the ```get_data_from_azure_search``` function. The default value for ```get_extra_data``` is false.
     - If the intent requires information from the connected dataset (which in most cases will require), only then invoke ```get_data_from_azure_search``` function.
+    - If the intent requires information from the internet/web, only then invoke ``get_data_from_web_search``` function.
     - Don't make any assumptions about what values, arguments to use with functions. Ask for clarification if a user request is ambiguous.
     - Only use the functions and parameters you have been provided with.
 """
