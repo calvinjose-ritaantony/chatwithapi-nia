@@ -1,14 +1,24 @@
+
+import io
+from typing import List
+
+from fpdf import FPDF
+from data.useCaseSpecificOutputs import StructuredSpendingAnalysis
+
 import os
+import uuid
 import base64
 import logging
 import json
 import datetime
 import tiktoken
+from PIL import Image
 
 from fastapi.responses import StreamingResponse
 from fastapi import UploadFile, WebSocket
 from openai import APIConnectionError, AsyncAzureOpenAI, AzureOpenAI, BadRequestError, RateLimitError
-from azure.storage.blob import BlobServiceClient
+from openai.types.chat import ChatCompletion
+from azure.storage.blob import BlobServiceClient, BlobClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 
 from ConnectionManager import ConnectionManager
@@ -31,6 +41,8 @@ from standalone_programs.simple_gpt import run_conversation, ticket_conversation
 from routes.ilama32_routes import chat2
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
 from thinking_process import REASONING_DATA
+from web_search_utils import search_web_with_sonar
+from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
@@ -170,40 +182,26 @@ async def store_to_blob_storage(uploadedImage: UploadFile = None):
         logger.error(f"Error occurred while storing image to Azure Blob Storage: {e}", exc_info=True)
         return DEFAULT_RESPONSE
     
-    #return DEFAULT_RESPONSE if blob_url_with_sas == None or blob_url_with_sas == "" else blob_url_with_sas
+async def get_data_from_web_search(search_query: str, region: str = "IN"):
+    logger.info(f"Running web search: query={search_query}, region={region}")
+    try:
+        search_summary = await search_web_with_sonar(query=search_query)
+        logger.info(f"Web Search Summary {search_summary}")
+        return search_summary
+    except Exception as e:
+        logger.error(f"Web search failed: {e}", exc_info=True)
+        return f"Web search error: {e}"
 
-# async def fetch_image_from_blob_storage(blob_url: str):
-#     try:
-#         # Extract the blob client from the URL
-#         blob_client = blob_service_client.get_blob_client(container=AZURE_BLOB_STORAGE_CONTAINER, blob=blob_url.split("/")[-1].split("?")[0])
 
-#         # Download the blob content
-#         download_stream = await blob_client.download_blob()
-#         image_data = await download_stream.readall()
-
-#         # Convert the image data to base64
-#         base64_image = base64.b64encode(image_data).decode('utf-8')
-#         logger.info(f"Fetched image from blob storage and converted to base64")
-
-#         return base64_image
-#     except Exception as e:
-#         logger.error(f"Error occurred while fetching image from blob storage: {e}", exc_info=True)
-#         return str(e)
-
-async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list):
-    # Log the response to database
-        await update_message({
-            "gpt_id": gpt["_id"], # Make sure gpt is accessible here
-            "gpt_name": gpt["name"], # Make sure gpt is accessible here
-            "role": "assistant",
-            "content": response,
-            "user": gpt["user"],
-            "use_case_id": gpt["use_case_id"],
-        })
-
-        conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
-
-async def get_completion_from_messages_standard(gpt: GPTData, model_configuration, conversations, use_case, role_information, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def perform_web_search(web_search: bool, query: str, deployment_name: str):
+    # Implement web search
+    if web_search:
+        #grounding_data_from_web = await search_web(query=query, deployment_name=deployment_name)
+        grounding_data_from_web = await search_web_with_sonar(query=query)
+        logger.info(f"Web Search Summary {grounding_data_from_web}")
+        return grounding_data_from_web
+    
+async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration, conversations, use_case, role_information, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     model_response = "No Response from Model"
     main_response = ""
     total_tokens = 0
@@ -248,6 +246,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
         model_response = response.choices[0].message.content
         logger.info(f"Full Model Response is {response}")
 
+        await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
         
         if model_response is None or model_response == "":
             main_response = "No Response from Model. Please try again."
@@ -281,6 +280,8 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
             )
             model_response = response.choices[0].message.content
             logger.info(f"Retry Model Response is {response}")
+
+            await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
 
             if model_response is None or model_response == "":
                 main_response = "No Response from Model. Please try again."
@@ -330,6 +331,9 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
            
             model_response = response.choices[0].message.content
             logger.info(f"Alternate Model Response is {response}")
+
+            await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
+            
             if model_response is None or model_response == "":
                 raise ValueError("No Response from Model. Please try again.")
             main_response, follow_up_questions, total_tokens = await extract_json_content(response)
@@ -409,7 +413,7 @@ async def get_completion_from_messages_standard(gpt: GPTData, model_configuratio
         "reasoning" : reasoning
     }
 
-async def get_completion_from_messages_stream(gpt: GPTData, model_configuration, conversations, use_case, role_information):
+async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration, conversations, use_case, role_information):
      # This client is asynchronous and needs await signal. Set stream=True
     try:
         # Get Azure Open AI Client and fetch response
@@ -433,7 +437,7 @@ async def get_completion_from_messages_stream(gpt: GPTData, model_configuration,
             nonlocal client
 
             try:
-                response = await client.chat.completions.create(
+                response: ChatCompletion = await client.chat.completions.create(
                     model=gpt["name"],
                     messages=conversations,
                     max_tokens=model_configuration.max_tokens,
@@ -672,7 +676,7 @@ async def analyzeImage_standard(gpt: GPTData, conversations, model_configuration
         logger.info(f"Retrying with next endpoint")
         client = await NiaAzureOpenAIClient().retry_with_next_endpoint()
         try:
-            response = await client.chat.completions.create(
+            response: ChatCompletion = await client.chat.completions.create(
                 model=gpt["name"],
                 messages=conversations,
                 max_tokens=model_configuration.max_tokens,
@@ -716,8 +720,8 @@ async def analyzeImage_standard(gpt: GPTData, conversations, model_configuration
             i += 1
 
         # Helper to call the model
-        async def call_model(client, model_name, conversations, model_configuration):
-            response = await client.chat.completions.create(
+        async def call_model(client: AsyncAzureOpenAI, model_name, conversations, model_configuration: ModelConfiguration):
+            response: ChatCompletion = await client.chat.completions.create(
                 model=model_name,
                 messages=conversations,
                 max_tokens=model_configuration.max_tokens,
@@ -976,7 +980,14 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
     USER_PROMPT = USE_CASE_CONFIG[use_case]["user_message"]
     #logger.info(f"USE_CASE_CONFIG[{use_case}]: {USER_PROMPT}")
 
-    context_information, additional_context_information, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration)
+    #context_information, additional_context_information, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration, "pre_response")
+    context_information, additional_context_information, web_data, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration,"pre_response")
+    if web_data:
+        additional_context_information = (
+        (additional_context_information + "\n\nWEB SEARCH RESULTS:\n" + str(web_data))
+            if additional_context_information else
+        "WEB SEARCH RESULTS:\n" + str(web_data)
+    )
 
     # Step 4: Append the current user query with additional context into the conversation. This additional context is only to generate the response from the model and won't be saved in the conversation history for aesthetic reasons.
     if use_case == "CREATE_PRODUCT_DESCRIPTION":
@@ -1096,10 +1107,19 @@ async def processResponse(response):
 
     return main_response, follow_up_questions, total_tokens
 
-async def generate_response(streaming_response: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, uploadedFile: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def generate_response(streaming_response: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, uploadedFile: UploadFile = None, 
+                            socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     has_image = False
     previous_conversations_count = 6
+    response = {
+                    # "response": "No Response from model", 
+                    "model_response": "No response from model",
+                    "total_tokens": 0, 
+                    "follow_up_questions": [""],
+                    "type": "chat_response"
+                }
     proceed = False
+    web_search = True
     model_name = gpt["name"]
     use_rag = bool(gpt["use_rag"])
     image_response = ""
@@ -1111,9 +1131,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
 
     # Fetch the thinking process for the selected use case
-    thinking_process_for_usecases: list = REASONING_DATA[use_case]
-    logger.info(thinking_process_for_usecases)
-    await socket_manager.send_json({"response" : thinking_process_for_usecases[0], "type": "thinking"}, websocket)
+    if use_case != "DEFAULT":
+        thinking_process_for_usecases: list = REASONING_DATA[use_case]
+        logger.info(thinking_process_for_usecases)
+
+    if use_case != "DEFAULT":
+        await socket_manager.send_json({"response" : thinking_process_for_usecases[0], "type": "thinking"}, websocket)
 
     # Step 2 : Get last conversation history (6 messages) for the given gpt_id and model_name
     chat_history = await fetch_chat_history(gpt["_id"], model_name, limit=6) # use limit=-1 if needing the entire conversation history to be passed to the model
@@ -1127,7 +1150,8 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     token_data = await get_token_count(model_name, gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
     logger.info(f"Token Calculation : stage 1 {token_data}")
 
-    await socket_manager.send_json({"response" : thinking_process_for_usecases[1], "type": "thinking"}, websocket)
+    if use_case != "DEFAULT":
+        await socket_manager.send_json({"response" : thinking_process_for_usecases[1], "type": "thinking"}, websocket)
     
     # Get previous conversation for context
     #previous_conversations = get_previous_context_conversations(conversation_list=conversations, previous_conversations_count=previous_conversations_count)
@@ -1142,11 +1166,19 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         "use_case_id": gpt["use_case_id"]
     })
     
+    if isinstance(uploadedFile, str) and (uploadedFile.find("data:image/jpeg;base64") != -1 or uploadedFile.find("data:image/png;base64") != -1): #base64 image from websocket API
+        has_image = True
+        base64_image = uploadedFile.split(",")[1]
+        # Decode the base64 image and create a dummy UploadFile object
+        image_data = base64.b64decode(base64_image)
+        uploadedFile = UploadFile(filename="current_uploaded_image", file=io.BytesIO(image_data), size=len(image_data))
+    
     #has_image = (uploadedFile is not None and uploadedFile.filename != "blob" and uploadedFile.filename != "dummy")
     logger.info(f"Uploaded File {uploadedFile}")
-    if len(uploadedFile) != 0:
+    if uploadedFile is not None and isinstance(uploadedFile, UploadFile):
         if uploadedFile.filename != "blob" and uploadedFile.filename != "dummy":
             file_extension = os.path.splitext(uploadedFile.filename)[1].lower()
+            logger.info(f"File extension detected: {file_extension}")
             if file_extension in ALLOWED_IMAGE_EXTENSIONS:
                 has_image = True
             
@@ -1157,13 +1189,51 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     logger.info(f"use_rag is {use_rag} and has_image is {has_image}")
     logger.info(f"Uploaded File {uploadedFile}")
 
-    await socket_manager.send_json({"response" : thinking_process_for_usecases[2], "type": "thinking"}, websocket)
+    if use_case != "DEFAULT":
+        await socket_manager.send_json({"response" : thinking_process_for_usecases[2], "type": "thinking"}, websocket)
 
     # Step 6: Handle images/attachments if any or the user query
     if not use_rag and has_image:
         logger.info("CASE 1 : No RAG but Image is present")
         proceed = False
         response = await processImage(streaming_response, True, user_message, model_configuration, gpt, conversations, uploadedFile)
+        image_result = response
+        context_information, additional_context_information, web_data, conversations = await determineFunctionCalling(
+        user_message,      # The user's text query
+        image_result,      # Pass the image analysis result as context
+        use_case,          # Your current use case string
+        gpt,
+        conversations,
+        model_configuration,
+        "post_response"
+       )
+        if web_data:
+            logger.info("Merging web_data into additional_context_information in CASE 1")
+            web_section = "\n\n### LIVE WEB SEARCH RESULTS ###\n" + str(web_data)
+            if additional_context_information:
+                additional_context_information += web_section
+            else:
+                additional_context_information = web_section
+        # USER_PROMPT = USE_CASE_CONFIG[use_case]["user_message"]
+        USER_PROMPT = USE_CASE_CONFIG.get(use_case, {}).get("user_message", "{query}")
+
+        conversations.append({
+            "role": "user",
+            "content": USER_PROMPT.format(
+                query=user_message,
+                sources=image_result,
+                additional_sources=additional_context_information
+            ) + FORMAT_RESPONSE_AS_MARKDOWN
+        })
+
+        if streaming_response:
+            response = await get_completion_from_messages_stream(
+                gpt, model_configuration, conversations, use_case, role_information)
+        else:
+            response = await get_completion_from_messages_standard(
+                gpt, model_configuration, conversations, use_case, role_information, websocket, socket_manager)
+        return response
+    
     elif use_rag and has_image:
         logger.info("CASE 2 : RAG and Image is present")
         proceed = True
@@ -1222,21 +1292,38 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         logger.info("CASE 4 : No RAG and No Image")
         proceed = True
         logger.info("No function calling. Plain query used as user message")
-        conversations.append({"role": "user", "content": user_message})
+        if web_search:
+            web_search_summary = await perform_web_search(web_search=web_search, query=user_message,deployment_name=gpt["name"])
+            context_information = "No Data"
+            conversations.append({"role": "user", "content": BALANCED_WEB_SEARCH_INTEGRATION.format(
+                                                user_query=user_message,
+                                                contextual_data=context_information,
+                                                web_search_results=web_search_summary) + FORMAT_RESPONSE_AS_MARKDOWN})
+            logger.info("inside web search call")
+            logger.info(f"Web Search Summary: {web_search_summary}")
+        else:
+            conversations.append({"role": "user", "content": user_message})
+        # logger.info("CASE 4 : No RAG and No Image")
+        # proceed = True
+        # logger.info("No function calling. Plain query used as user message")
+        # conversations.append({"role": "user", "content": user_message})
         
     # Step 7: Get the token count after the user message is added to the conversation
     token_data = await get_token_count(model_name, gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
     logger.info(f"Token Calculation : stage 2 (Before generating response) {token_data}")
 
-    await socket_manager.send_json({"response" : thinking_process_for_usecases[3], "type": "thinking"}, websocket)
+    if use_case != "DEFAULT":
+        await socket_manager.send_json({"response" : thinking_process_for_usecases[3], "type": "thinking"}, websocket)
 
     # Azure OpenAI API call
     if proceed == True:
         if streaming_response:
-            response = await get_completion_from_messages_stream(gpt, model_configuration, conversations, use_case, role_information)
+            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, role_information)
         else:
-            await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
-            response = await get_completion_from_messages_standard(gpt, model_configuration, conversations, use_case, role_information, websocket, socket_manager)
+            if use_case != "DEFAULT":
+                await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
+            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, role_information, websocket, socket_manager)
+            logger.info(f"Response from model: {response}")
 
     # Sometimes model returns "null" which is not supported by python
     # the null gets into the chat history and ruins all the subsequent calls to the model
@@ -1449,17 +1536,16 @@ async def summarize_conversations(chat_history, gpt):
 
     return conversation_summary
 
-async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration):
+async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str = None):
     function_calling_conversations = []
     data = []
     additional_data = []
+    web_data = "No data from web"
 
     deployment_name = gpt["name"]
     gpt_id: str = str(gpt["_id"]) 
 
     logger.info(f"determineFunctionCalling calling Start {deployment_name}")
-    use_case_from_db = await get_usecases(gpt_id)
-    use_case_list = [use_case["name"] for use_case in use_case_from_db]
 
     # Azure Open AI Clients for different tasks
     azure_openai_client =  AsyncAzureOpenAI(
@@ -1472,38 +1558,11 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
 
     # Initial user message
     function_calling_conversations.append({"role": "system", "content":FUNCTION_CALLING_SYSTEM_MESSAGE}) # Single function call
-    function_calling_conversations.append({"role": "user", "content": FUNCTION_CALLING_USER_MESSAGE.format(query=search_query, use_case=use_case, conversation_history=conversations, image_details=image_response)}) # Single function call
+    function_calling_conversations.append({"role": "user", "content": FUNCTION_CALLING_USER_MESSAGE.format(query=search_query, 
+                                                                                                           use_case=use_case, 
+                                                                                                           conversation_history=conversations, 
+                                                                                                           image_details=image_response)}) # Single function call
     #messages = [{"role": "user", "content": "What's the current time in San Francisco, Tokyo, and Paris?"}] # Parallel function call with a single tool/function defined
-
-    # Define the function for the model
-    tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_data_from_azure_search",
-                "description": "Fetch the e-commerce order related documents from Azure AI Search for the given user query",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "search_query": {
-                            "type": "string",
-                            "description": "The user query related to e-commerce orders, products, reviews, status, analytics etc, e.g. find all orders by Chris Miller, Summarize the reviews of product P015",
-                        },
-                        "use_case": {
-                            "type": "string", 
-                            "enum": use_case_list,
-                            "description": f"The actual use case of the user query, e.g. {use_case}"
-                            },
-                        "get_extra_data":{
-                            "type": "boolean",
-                            "description": "If true, fetch the extra data from NIA Finolex Search Index. If false, fetch the data from the use case index"
-                        }
-                    },
-                    "required": ["search_query", "use_case", "get_extra_data"],
-                },
-            }
-        }
-    ]
 
     response_from_function_calling_model = ""
     function_calling_model_response = ""
@@ -1513,7 +1572,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
         response_from_function_calling_model = await azure_openai_client.chat.completions.create(
             model=GPT_4o_2_MODEL_NAME,
             messages=function_calling_conversations,
-            tools=tools,
+            tools=await get_tools(gpt_id=gpt["_id"], use_case=use_case, scenario=scenario),
             #tool_choice="none",
             tool_choice="auto",
             #tool_choice={"type": "function", "function" : {"name"  : "get_data_from_azure_search"}}
@@ -1539,6 +1598,20 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         get_extra_data= function_args.get("get_extra_data") if use_case == "DOC_SEARCH" else False, # Only for doc search the fetch of extra data must be enabled
                         gpt_id = gpt_id
                     )
+                elif tool_call.function.name == "write_structured_response_to_pdf":
+                    logger.info("write_structured_response_to_pdf called")
+                    function_args = json.loads(tool_call.function.arguments)
+                    logger.info(f"[PDF INTENT] PDF tool called with args: {function_args}")
+                    pdf_content = function_args.get("response_text", "")
+                    await write_structured_response_to_pdf(pdf_content)
+
+                elif tool_call.function.name == "get_data_from_web_search":
+                    logger.info("Calling get_data_from_web_search")
+                    function_args = json.loads(tool_call.function.arguments)
+                    web_data = await get_data_from_web_search(
+                    search_query=function_args.get("search_query"),
+                    region=function_args.get("region", "IN"),
+                    )
 
                     # Append the function response to the original conversation list
                     # conversations.append({
@@ -1561,9 +1634,8 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
         token_data = await get_token_count(gpt["name"], gpt["instructions"],  function_calling_conversations, search_query, int(model_configuration.max_tokens))
         logger.info(f"Token Calculation : stage 1.2 - Function calling {token_data}")
         function_calling_conversations.clear() # Clear the messages list because we do not need the system message, user message in this function
-        logger.info(f"function_calling_model_response {function_calling_model_response}")
 
-    return data, additional_data, conversations
+    return data, additional_data,web_data, conversations
 
 async def call_maf(ticketId: str):
     client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, False)
@@ -1592,4 +1664,257 @@ async def construct_model_configuration(model_configuration) -> ModelConfigurati
     """
     model_configuration: ModelConfiguration = model_configuration if  isinstance(model_configuration, ModelConfiguration) else ModelConfiguration(**model_configuration)
     return model_configuration
+
+async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list):
+    # Log the response to database
+        await update_message({
+            "gpt_id": gpt["_id"], # Make sure gpt is accessible here
+            "gpt_name": gpt["name"], # Make sure gpt is accessible here
+            "role": "assistant",
+            "content": response,
+            "user": gpt["user"],
+            "use_case_id": gpt["use_case_id"],
+        })
+
+        conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
     
+# --- Helper to serialize and write structured response to PDF ---
+async def write_structured_response_to_pdf(pdf_content):
+    """
+    Try to parse as StructuredSpendingAnalysis and pretty print if possible, else fallback to string.
+    """
+    try:
+        parsed = None
+        if isinstance(pdf_content, str):
+            try:
+                parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
+            except Exception:
+                try:
+                    parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
+                except Exception:
+                    parsed = None
+        if parsed:
+            # Serialize to readable text
+            text = f"{parsed.title}\n\n{parsed.description}\n\n"
+            for block in parsed.blocks:
+                if block.block_type == "text":
+                    text += f"{block.title}\n{block.content}\n\n"
+                elif block.block_type == "table":
+                    text += f"{block.title}\n"
+                    text += "\t".join(block.headers) + "\n"
+                    for row in block.rows:
+                        text += "\t".join(row) + "\n"
+                    text += "\n"
+                elif block.block_type == "chart":
+                    text += f"{block.title} ({block.chart_type} chart)\n"
+                    text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
+            text += f"{parsed.closure}\n"
+            pdf_content = text
+       
+        # Write the content tot PDF file
+        await generate_pdf_from_text(pdf_content, "structured_output.pdf")
+    except Exception as ser_ex:
+        logger.error(f"[PDF INTENT] Error serializing structured response: {ser_ex}")
+        # Fallback: write to text file if PDF generation fails
+        try:
+            # Create directory if it doesn't exist
+            text_dir = os.path.join("static", "pdfs")
+            os.makedirs(text_dir, exist_ok=True)
+            
+            # Write to text file as fallback
+            text_file_path = os.path.join(text_dir, "structured_output.txt")
+            with open(text_file_path, "w", encoding="utf-8") as f:
+                f.write(pdf_content)
+            logger.info(f"[PDF INTENT] Fallback: Wrote content to text file at {text_file_path}")
+        except Exception as text_ex:
+            logger.error(f"[PDF INTENT] Error writing fallback text file: {text_ex}")
+
+async def generate_pdf_from_text(text: str, filename: str) -> str:
+    pdf: FPDF = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_font("Arial", size=12)
+    for line in text.split('\n'):
+        pdf.cell(0, 10, txt=line, ln=1)
+    output_path = os.path.join("static", "pdfs", filename)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    pdf.output(output_path)
+    return output_path
+    
+async def get_tools(gpt_id: str, use_case: str, scenario: str):
+    tools = []
+
+    if scenario == "pre_response":
+        # Get the usecases from database
+        use_case_from_db = await get_usecases(gpt_id)
+        use_case_list: List[str] = [use_case["name"] for use_case in use_case_from_db]
+
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_data_from_azure_search",
+                    "description": "Fetch the e-commerce order related documents from Azure AI Search for the given user query",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "search_query": {
+                                "type": "string",
+                                "description": "The user query related to e-commerce orders, products, reviews, status, analytics etc, e.g. find all orders by Chris Miller, Summarize the reviews of product P015",
+                            },
+                            "use_case": {
+                                "type": "string", 
+                                "enum": use_case_list,
+                                "description": f"The actual use case of the user query, e.g. {use_case}"
+                                },
+                            "get_extra_data":{
+                                "type": "boolean",
+                                "description": "If true, fetch the extra data from NIA Finolex Search Index. If false, fetch the data from the use case index"
+                            }
+                        },
+                        "required": ["search_query", "use_case", "get_extra_data"],
+                    },
+                }
+            },
+        {
+        "type": "function",
+        "function": {
+            "name": "get_data_from_web_search",
+            "description": "Fetch live public information from the web for the given query",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "search_query": {
+                        "type": "string",
+                        "description": "Topic to search on the web, e.g., 'latest Nifty 50 index value'"
+                    },
+                    "region": {
+                        "type": "string",
+                        "description": "Region code for results, e.g., 'IN', 'US'",
+                        "default": "IN"
+                    }
+                },
+                "required": ["search_query"]
+            }
+        }
+    }
+        ]
+    elif scenario == "post_response":
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "write_structured_response_to_pdf",
+                    "description": "If the user requests to download the response as PDF, this function will generate the PDF from the response",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "response_text": {  
+                                "type": "string",
+                                "description": "The response text from the model"
+                            }
+                        },
+                        "required": ["response_text"],
+                    },
+                }
+            }
+        ]
+
+    return tools
+
+async def get_last_user_message(conversations: list):
+    """
+    Extracts the last message with role 'user' from the conversations list.
+    
+    Args:
+        conversations: A list of message objects with 'role' and 'content' keys
+        
+    Returns:
+        The content of the last user message, or None if no user message is found
+    """
+    last_user_message = None
+
+    if not conversations or not isinstance(conversations, list):
+        return last_user_message
+    
+    # Iterate through the conversations list in reverse order
+    for message in reversed(conversations):
+        if isinstance(message, dict) and message.get("role") == "user":
+            logger.info(f"Last user message found: {message.get('content')}")
+            last_user_message = message.get("content")
+    
+    return last_user_message
+
+async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[dict], model_configuration: ModelConfiguration, extra_body: dict = None):
+    response: ChatCompletion = await client.chat.completions.create(
+                model=gpt["name"],
+                messages=conversations,
+                max_tokens=model_configuration.max_tokens, #max_tokens is now deprecated with o1 models
+                temperature=model_configuration.temperature,
+                top_p=model_configuration.top_p,
+                frequency_penalty=model_configuration.frequency_penalty,
+                presence_penalty=model_configuration.presence_penalty,
+                extra_body=extra_body,
+                seed=100,
+                stop=None,
+                stream=False,
+                user=gpt["user"]
+                #n=2,
+                #reasoning_effort="low", # available for o1,o3 models only
+                #timeout=30,
+                #service_tier="auto" # default, flex 
+            )
+    model_response = response.choices[0].message.content
+    return response, model_response
+
+async def do_post_response_processing(user_query: str, gpt: GPTData, conversations: List[dict], model_configuration: ModelConfiguration, use_case: str):
+    logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
+    pdf_intent_conversation = conversations + [{"role": "user", "content": user_query}]
+    logger.info(f"[PDF INTENT] Calling OpenAI with tools")
+    
+    await determineFunctionCalling(user_query, "No Data", use_case, gpt, pdf_intent_conversation, model_configuration, "post_response")
+
+def base64_to_image(base64_string: str, save_path=None, filename=None):
+    """
+    Convert base64 encoded image string to an image file.
+    
+    Args:
+        base64_string: Base64 encoded image string
+        save_path: Directory to save the image (optional)
+        filename: Name for the saved file (optional)
+        
+    Returns:
+        PIL Image object and file path if saved
+    """
+    try:
+        # Check if the base64 string is empty or None
+        if not base64_string:
+            logging.error("Empty base64 string provided")
+            return None, None
+            
+        # If the string contains a data URI prefix, remove it
+        if "," in base64_string:
+            base64_string = base64_string.split(",")[1]
+            
+        # Decode the base64 string
+        image_data = base64.b64decode(base64_string)
+        image = Image.open(io.BytesIO(image_data))
+        
+        # Save the image if a path is provided
+        filepath = None
+        if save_path:
+            os.makedirs(save_path, exist_ok=True)
+            
+            # Generate a filename if not provided
+            if not filename:
+                filename = f"{uuid.uuid4()}.{image.format.lower() if image.format else 'png'}"
+                
+            filepath = os.path.join(save_path, filename)
+            image.save(filepath)
+            logging.info(f"Image saved to {filepath}")
+            
+        return image, filepath
+        
+    except Exception as e:
+        logging.error(f"Error converting base64 to image: {e}", exc_info=True)
+        return None, None
