@@ -57,9 +57,11 @@ blob_service_client = BlobServiceClient(f"https://{AZURE_BLOB_STORAGE_ACCOUNT_NA
     credential=AZURE_BLOB_STORAGE_ACCESS_KEY
 )
 
+
 # Tells the Flask-session extension to store sessions in the filesystem
 SESSION_TYPE = "filesystem"
 
 
 # Create connection manager
 socket_manager = ConnectionManager()
+

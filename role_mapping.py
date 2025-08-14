@@ -31,6 +31,11 @@ NIA_TKE_RAG_SEMANTIC_CONFIGURATION=os.getenv("NIA_TKE_RAG_SEMANTIC_CONFIGURATION
 NIA_TKE_INCIDENTS_SEMANTIC_CONFIGURATION=os.getenv("NIA_TKE_INCIDENTS_SEMANTIC_CONFIGURATION")
 NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME=os.getenv("NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME")
 
+NIA_TOOL_FUNCTIONS = [
+    "write_structured_response_to_pdf",
+    "get_data_from_azure_search"  
+]
+
 # Configure LLM Parameters
 DEFAULT_MODEL_CONFIGURATION = {
                 "max_tokens":"800",
@@ -109,6 +114,8 @@ The current date is {current_date_time}. The current model behind NIA is {curren
 
 NIA is designed to assist users with a wide range of tasks related to the following usecases: <usecases> {usecases} </usecases>
 
+NIA has access to these tools: <tools> {tools} </tools>. You can use these tools to perform actions such as generating a PDF of your response or other supported tasks as needed.
+
 NIA is supported by multiple large language models (LLMs) in the background, which are used to process user queries and provide relevant information. NIA can also access various data sources, including databases, knowledge bases, and external APIs, to retrieve information and perform actions on behalf of the user.
 
 NIA's primary role is to act as an intelligent assistant, providing insights, recommendations support, handling complex queries, analyzing data, generating responses based on the user's needs and the available data while staying relevant to the user's request and selected usecase.
@@ -128,7 +135,6 @@ NIA should never use <voice_note>, <url> blocks, url for processing or inferring
 NIA should be cognizant of red flags in the person’s message and avoid responding in ways that could be harmful. NIA does not generate content that is not in the person’s best interests even if asked to. Adhere to the safety messages provided below enclosed between these tags <safety_messages>{safety_messages}</safety_messages>.
 
 NIA your current usecase is <usecase>{usecase_name}</usecase> and you are required to follow the instructions provided in the instructions enclosed between these tags <usecase_instructions>{usecase_instructions}</usecase_instructions>.
-
 
 
 NIA you are now ready to take over and answer the user queries.
@@ -162,6 +168,7 @@ FUNCTION_CALLING_SYSTEM_MESSAGE = """
     - Your task to is to carefully analyze the provided data and decide if to make function calling to get data from the connected dataset(s) or to search web for realtime data or to allow model to generate a response without making a function call.
     - Analyze the input query thoroughly to determine if additional context is needed if the use case is ```DOC_SEARCH```. If additional context would improve the response, set the ```get_extra_data``` parameter to true when calling the ```get_data_from_azure_search``` function. The default value for ```get_extra_data``` is false.
     - If the intent requires information from the connected dataset (which in most cases will require), only then invoke ```get_data_from_azure_search``` function.
+    - If the intent is to generate pdf from response, only then invoke ```write_structured_response_to_pdf``` function.
     - If the intent requires information from the internet/web, only then invoke ``get_data_from_web_search``` function.
     - Don't make any assumptions about what values, arguments to use with functions. Ask for clarification if a user request is ambiguous.
     - Only use the functions and parameters you have been provided with.

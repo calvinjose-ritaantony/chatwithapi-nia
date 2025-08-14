@@ -182,6 +182,7 @@ async def store_to_blob_storage(uploadedImage: UploadFile = None):
         logger.error(f"Error occurred while storing image to Azure Blob Storage: {e}", exc_info=True)
         return DEFAULT_RESPONSE
     
+
 async def get_data_from_web_search(search_query: str, region: str = "IN"):
     logger.info(f"Running web search: query={search_query}, region={region}")
     try:
@@ -246,7 +247,8 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         model_response = response.choices[0].message.content
         logger.info(f"Full Model Response is {response}")
 
-        await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
+        await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response)
+
         
         if model_response is None or model_response == "":
             main_response = "No Response from Model. Please try again."
@@ -281,7 +283,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             model_response = response.choices[0].message.content
             logger.info(f"Retry Model Response is {response}")
 
-            await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
+            await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response)
 
             if model_response is None or model_response == "":
                 main_response = "No Response from Model. Please try again."
@@ -332,8 +334,8 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             model_response = response.choices[0].message.content
             logger.info(f"Alternate Model Response is {response}")
 
-            await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
-            
+            await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response)
+
             if model_response is None or model_response == "":
                 raise ValueError("No Response from Model. Please try again.")
             main_response, follow_up_questions, total_tokens = await extract_json_content(response)
@@ -1124,12 +1126,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     use_rag = bool(gpt["use_rag"])
     image_response = ""
     DEFAULT_IMAGE_RESPONSE = ""
-
+ 
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
     role_information, model_configuration = await get_role_information(use_case) if use_rag else ("AI Assistant", model_configuration)
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
-
+ 
     # Fetch the thinking process for the selected use case
     if use_case != "DEFAULT":
         thinking_process_for_usecases: list = REASONING_DATA[use_case]
@@ -1140,13 +1142,13 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
 
     # Step 2 : Get last conversation history (6 messages) for the given gpt_id and model_name
     chat_history = await fetch_chat_history(gpt["_id"], model_name, limit=6) # use limit=-1 if needing the entire conversation history to be passed to the model
-    
+   
     # Step 3: Format the conversation to support OpenAI format (System Message, User Message, Assistant Message)
     conversations = [{"role": "system", "content": gpt["instructions"]}]
     for msg in chat_history:
         conversations.append({"role": msg["role"], "content": msg["content"]})
-
-    # Step 4: get token count for the conversation 
+ 
+    # Step 4: get token count for the conversation
     token_data = await get_token_count(model_name, gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
     logger.info(f"Token Calculation : stage 1 {token_data}")
 
@@ -1155,7 +1157,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     
     # Get previous conversation for context
     #previous_conversations = get_previous_context_conversations(conversation_list=conversations, previous_conversations_count=previous_conversations_count)
-
+ 
     # Step 5: Add the current user query to the messages Collection (Chat History). Avoid saving the query with additional grounded prompt information
     await update_message({
         "gpt_id": gpt["_id"],
@@ -1165,7 +1167,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         "user": gpt["user"],
         "use_case_id": gpt["use_case_id"]
     })
-    
+
     if isinstance(uploadedFile, str) and (uploadedFile.find("data:image/jpeg;base64") != -1 or uploadedFile.find("data:image/png;base64") != -1): #base64 image from websocket API
         has_image = True
         base64_image = uploadedFile.split(",")[1]
@@ -1181,11 +1183,11 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             logger.info(f"File extension detected: {file_extension}")
             if file_extension in ALLOWED_IMAGE_EXTENSIONS:
                 has_image = True
-            
+           
             if file_extension in [".pdf"]:
                 use_rag = True
                 await handle_upload_files(gpt["_id"], gpt, [uploadedFile])
-
+ 
     logger.info(f"use_rag is {use_rag} and has_image is {has_image}")
     logger.info(f"Uploaded File {uploadedFile}")
 
@@ -1237,13 +1239,13 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     elif use_rag and has_image:
         logger.info("CASE 2 : RAG and Image is present")
         proceed = True
-        
+       
         # Step 1 : Process the image (Always keep the stream flag as False when processing the image with RAG. Because we need full information of the image for the function calling to take a decision. Streaming will cause problems)
         conversation_for_image_analysis = []
-
+ 
         # Create a specialized image analysis system message
         conversation_for_image_analysis.append({
-            "role": "system", 
+            "role": "system",
             "content": "You are an intelligent image analysis assistant specialized in e-commerce and structured document interpretation. You must dynamically adjust your inference based on image type. Every output should include TWO clear sections: \n\n"
                 "1. INFERENCE (Max 50 words):\n"
                 "   - Summarize what the image represents (product, handwritten note, invoice, etc.)\n"
@@ -1274,10 +1276,10 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 "- Remain factual, structured, and avoid assumptions unless strongly implied by visual context\n"
                 "- Respond professionally and helpfully in every case"
         })
-        
+       
         image_response = await processImage(False, False, user_message, model_configuration, gpt, conversation_for_image_analysis, uploadedFile)
         conversation_for_image_analysis.clear()
-
+ 
         # Step 2 : Function Calling
         if image_response is not None and image_response.get("model_response") is not None and image_response.get("model_response") != "":
             #conversations.append({"role": "user", "content": user_message})
@@ -1292,6 +1294,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         logger.info("CASE 4 : No RAG and No Image")
         proceed = True
         logger.info("No function calling. Plain query used as user message")
+
         if web_search:
             web_search_summary = await perform_web_search(web_search=web_search, query=user_message,deployment_name=gpt["name"])
             context_information = "No Data"
@@ -1332,12 +1335,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         response = "No response from model"
     else:
         pass
-
+ 
     await socket_manager.send_json({"response" : "Response Generated", "type": "thinking"}, websocket)
-        
+       
     logger.info(f"Conversation : {conversations}")
     logger.info(f"Tokens in the conversation {len(token_encoder.encode(str(conversations)))}")
-
+ 
     # summarize the conversation history if its close to 90% of the token limit
     # if int(response["total_tokens"]) >= int(model_configuration["max_tokens"]) * 0.9:
     #     conversation_summary = await summarize_conversations(conversations, gpt)
@@ -1348,7 +1351,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     #         "role": "assistant",
     #         "content": f"Below is the summary of the previous conversations with the assistant. \n{conversation_summary}"
     #     })
-
+ 
     return response
 
 async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool):
@@ -1604,7 +1607,6 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                     logger.info(f"[PDF INTENT] PDF tool called with args: {function_args}")
                     pdf_content = function_args.get("response_text", "")
                     await write_structured_response_to_pdf(pdf_content)
-
                 elif tool_call.function.name == "get_data_from_web_search":
                     logger.info("Calling get_data_from_web_search")
                     function_args = json.loads(tool_call.function.arguments)
@@ -1729,14 +1731,23 @@ async def write_structured_response_to_pdf(pdf_content):
         except Exception as text_ex:
             logger.error(f"[PDF INTENT] Error writing fallback text file: {text_ex}")
 
-async def generate_pdf_from_text(text: str, filename: str) -> str:
+async def generate_pdf_from_text(text: str, base_filename: str = "structured_output.pdf") -> str:
     pdf: FPDF = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.set_font("Arial", size=12)
     for line in text.split('\n'):
         pdf.cell(0, 10, txt=line, ln=1)
-    output_path = os.path.join("static", "pdfs", filename)
+
+    # Get user's Documents folder
+    documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+    nia_dir = os.path.join(documents_dir, "NIA")
+    date_folder = datetime.datetime.now().strftime("%Y-%m-%d")
+    output_dir = os.path.join(nia_dir, date_folder)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Always use the same filename, overwrite if exists
+    output_path = os.path.join(output_dir, "structured_output.pdf")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     pdf.output(output_path)
     return output_path
@@ -1776,29 +1787,29 @@ async def get_tools(gpt_id: str, use_case: str, scenario: str):
                     },
                 }
             },
-        {
-        "type": "function",
-        "function": {
-            "name": "get_data_from_web_search",
-            "description": "Fetch live public information from the web for the given query",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "search_query": {
-                        "type": "string",
-                        "description": "Topic to search on the web, e.g., 'latest Nifty 50 index value'"
+            {
+            "type": "function",
+            "function": {
+                "name": "get_data_from_web_search",
+                "description": "Fetch live public information from the web for the given query",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "search_query": {
+                            "type": "string",
+                            "description": "Topic to search on the web, e.g., 'latest Nifty 50 index value'"
+                        },
+                        "region": {
+                            "type": "string",
+                            "description": "Region code for results, e.g., 'IN', 'US'",
+                            "default": "IN"
+                        }
                     },
-                    "region": {
-                        "type": "string",
-                        "description": "Region code for results, e.g., 'IN', 'US'",
-                        "default": "IN"
-                    }
-                },
-                "required": ["search_query"]
+                    "required": ["search_query"]
+                }
             }
         }
-    }
-        ]
+      ]
     elif scenario == "post_response":
         tools = [
             {
@@ -1867,12 +1878,16 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     model_response = response.choices[0].message.content
     return response, model_response
 
-async def do_post_response_processing(user_query: str, gpt: GPTData, conversations: List[dict], model_configuration: ModelConfiguration, use_case: str):
+async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str):
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
-    pdf_intent_conversation = conversations + [{"role": "user", "content": user_query}]
+    pdf_intent_conversation = [
+        {"role": "user", "content": user_query}, 
+        {"role": "assistant", "content": model_response}
+    ]
     logger.info(f"[PDF INTENT] Calling OpenAI with tools")
     
     await determineFunctionCalling(user_query, "No Data", use_case, gpt, pdf_intent_conversation, model_configuration, "post_response")
+
 
 def base64_to_image(base64_string: str, save_path=None, filename=None):
     """
