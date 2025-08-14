@@ -12,6 +12,7 @@ from data.MessageData import Message
 from data.Usecase import Usecase
 from mongo_client import get_mongo_db
 from role_mapping import NIA_OFFICIAL_MAIL, NIA_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE, USE_CASES_LIST
+from role_mapping import NIA_TOOL_FUNCTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -215,6 +216,7 @@ async def update_gpt_instruction(gpt_id: str, gpt_name: str, usecase_id: str, lo
                 usecases=USE_CASES_LIST,
                 contact_nia=NIA_OFFICIAL_MAIL,
                 safety_messages=SYSTEM_SAFETY_MESSAGE,
+                tools = NIA_TOOL_FUNCTIONS,
                 usecase_name=useCase["name"],
                 usecase_instructions=useCase["instructions"]
             )

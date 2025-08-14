@@ -223,7 +223,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         model_response = response.choices[0].message.content
         logger.info(f"Full Model Response is {response}")
 
-        await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
+        await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response)
         
         if model_response is None or model_response == "":
             main_response = "No Response from Model. Please try again."
@@ -258,7 +258,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             model_response = response.choices[0].message.content
             logger.info(f"Retry Model Response is {response}")
 
-            await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
+            await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response)
 
             if model_response is None or model_response == "":
                 main_response = "No Response from Model. Please try again."
@@ -309,8 +309,8 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             model_response = response.choices[0].message.content
             logger.info(f"Alternate Model Response is {response}")
 
-            await do_post_response_processing(user_query, gpt, conversations, model_configuration, use_case)
-            
+            await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response)
+
             if model_response is None or model_response == "":
                 raise ValueError("No Response from Model. Please try again.")
             main_response, follow_up_questions, total_tokens = await extract_json_content(response)
@@ -1755,9 +1755,12 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     model_response = response.choices[0].message.content
     return response, model_response
 
-async def do_post_response_processing(user_query: str, gpt: GPTData, conversations: List[dict], model_configuration: ModelConfiguration, use_case: str):
+async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str):
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
-    pdf_intent_conversation = conversations + [{"role": "user", "content": user_query}]
+    pdf_intent_conversation = [
+        {"role": "user", "content": user_query}, 
+        {"role": "assistant", "content": model_response}
+    ]
     logger.info(f"[PDF INTENT] Calling OpenAI with tools")
     
     await determineFunctionCalling(user_query, "No Data", use_case, gpt, pdf_intent_conversation, model_configuration, "post_response")
