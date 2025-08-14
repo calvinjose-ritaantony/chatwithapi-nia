@@ -834,7 +834,7 @@ document.addEventListener('DOMContentLoaded', function () {
             gpt_id: gpt_id,
             gpt_name: gpt_name,
             user_message: user_message,
-            image: imageData,
+            uploadedImage: imageData,
             stream: isStreamingResponse,
             params: model_configuration
         };
