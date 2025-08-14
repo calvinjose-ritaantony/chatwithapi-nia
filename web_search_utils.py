@@ -3,7 +3,7 @@ import requests
 import json
 import logging
 from dotenv import load_dotenv
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 from openai import RateLimitError
 
 from app_config import SONAR_PERPLEXITY_API_KEY, SONAR_PERPLEXITY_MODEL, SONAR_PERPLEXITY_URL
@@ -17,6 +17,85 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 timeout = 20
+
+async def search_web_with_sonar(query: str):
+
+    citations = []
+    grounding_data_from_web = None
+
+    try:
+        # Set up the API endpoint and headers
+        headers = {
+            "Authorization": f"Bearer {SONAR_PERPLEXITY_API_KEY}",  # Replace with your actual API key
+            "Content-Type": "application/json"
+        }
+
+        # Define the request payload
+        payload = {
+            "model": SONAR_PERPLEXITY_MODEL,
+            "messages": [ 
+                {
+                    "role" : "system",
+                    "content" : """You are a helpful AI assistant.
+
+                        Task:
+                        1. Your task is to to real-time web search for finding latest information on any given topic.
+
+                        Rules:
+                        1. Provide only the final answer. It is important that you do not include any explanation on the steps below.
+                        2. Do not show the intermediate steps information.
+                        
+
+                        Steps:
+                        1. Decide if the answer should be a brief sentence or a list of suggestions.
+                        2. If it is a list of suggestions, first, write a brief and short, natural introduction based on the original query.
+                        3. Followed by a list of suggestions, each suggestion should be split by two newlines."""
+                },
+                {
+                    "role": "user", 
+                    "content": f"""
+                        Follow the below steps to search the web:
+                        - Optimize the given query and extract SEO optimized web search key terms.
+                        - Use the optimized keywords to search the web.
+
+                        Query: {query}
+                        """
+                }
+            ], #3. Please return the data as a JSON object in the format specified in the "response_format" section.
+            # "response_format": {
+            #     "type": "json_schema",
+            #     "json_schema": {
+            #         "schema": {
+            #         "type": "object",
+            #         "properties": {
+            #             "topic": {"type": "string"},
+            #             "summary": {"type": "string"},
+            #             "citations": {
+            #                 "type": "array",
+            #                 "references": {"type": "string"}
+            #             }
+            #         },
+            #         "required": ["topic", "summary", "citations"]
+            #         }
+            #     }
+            # }
+        }
+
+        # Make the API call
+        response = requests.post(SONAR_PERPLEXITY_URL, headers=headers, json=payload)
+
+        logger.info(f"Response from SONAR : {response.json()}")
+
+        if response is not None:
+            citations = response.json().get("citations", [])
+            grounding_data_from_web = response.json()["choices"][0]['message']['content']
+
+        # Print the AI's response
+        logger.info(f"Response from SONAR : \n {response.json()}") # replace with print(response.json()["choices"][0]['message']['content']) for just the content
+    except Exception as e:
+        logger.error(f"Error occurred while calling the Sonar Perplexity API: {e}", exc_info=True)
+
+    return grounding_data_from_web, citations
 
 # async def google_search(query: str, num_results: int = 3):
 #     """Search Google Custom Search API and return the top URLs."""
@@ -71,43 +150,6 @@ timeout = 20
 #         logger.error(f"Error extracting content from {url}: {e}", exc_info=True)
         
 #     return ""
-
-async def search_web_with_sonar(query: str):
-
-    citations = []
-    grounding_data_from_web = None
-
-    try:
-        # Set up the API endpoint and headers
-        headers = {
-            "Authorization": f"Bearer {SONAR_PERPLEXITY_API_KEY}",  # Replace with your actual API key
-            "Content-Type": "application/json"
-        }
-
-        # Define the request payload
-        payload = {
-            "model": SONAR_PERPLEXITY_MODEL,
-            "messages": [
-                {
-                    "role": "user", 
-                    "content": f"{query}"
-                }
-            ]
-        }
-
-        # Make the API call
-        response = requests.post(SONAR_PERPLEXITY_URL, headers=headers, json=payload)
-
-        if response is not None:
-            citations = response.json().get("citations", [])
-            grounding_data_from_web = response.json()["choices"][0]['message']['content']
-
-        # Print the AI's response
-        logger.info(f"Response from SONAR : \n {response.json()}") # replace with print(response.json()["choices"][0]['message']['content']) for just the content
-    except Exception as e:
-        logger.error(f"Error occurred while calling the Sonar Perplexity API: {e}", exc_info=True)
-
-    return grounding_data_from_web, citations
 
 # # async def search_web(query: str, deployment_name: str):
 #     """Search Google, extract content, and generate summaries."""
