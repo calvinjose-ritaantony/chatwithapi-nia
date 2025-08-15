@@ -66,13 +66,13 @@ async def web_search_tool() -> NiaTool:
 
 async def write_response_to_pdf_tool() -> NiaTool:
     return NiaTool(
-        tool_name="write_response_to_pdf_tool", 
+        tool_name="write_response_to_pdf", 
         tool_description="Function that allows NIA to write the response to a pdf file",
         type="post_response",
         tool_definition={
                 "type": "function",
                 "function": {
-                    "name": "write_response_to_pdf_tool",
+                    "name": "write_response_to_pdf",
                     "description": "If the user requests to download the response as PDF, this function will generate the PDF from the response",
                     "parameters": {
                         "type": "object",
@@ -80,6 +80,10 @@ async def write_response_to_pdf_tool() -> NiaTool:
                             "response_text": {  
                                 "type": "string",
                                 "description": "The response text from the model"
+                            },
+                            "file_name": {  
+                                "type": "string",
+                                "description": "The file name for the PDF, e.g., 'ANALYZE_SPENDING_PATTERN_CHRIS_MILLER_RESPONSE'",
                             }
                         },
                         "required": ["response_text"],

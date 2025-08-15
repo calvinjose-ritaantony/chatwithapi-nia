@@ -1570,9 +1570,9 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                     logger.info("write_response_to_pdf called")
                     function_args = json.loads(tool_call.function.arguments)
                     logger.info(f"[PDF INTENT] PDF tool called with args: {function_args}")
-                    pdf_content = function_args.get("response_text", "")
                     await write_response_to_pdf(
-                        pdf_content=pdf_content
+                        pdf_content=function_args.get("response_text", ""),
+                        file_name=function_args.get("file_name", "nia_response")  # Default file name if not provided
                     )
                 elif tool_call.function.name == "get_data_from_web_search":
                     logger.info("Calling get_data_from_web_search")
@@ -1581,6 +1581,8 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         region=function_args.get("region", "IN"),
                     )
+                else:
+                    logger.info(f"Couldn't find tool {tool_call.function.name} in NIA. Kindly check the tool definition.s")
 
                     # Append the function response to the original conversation list
                     # conversations.append({
@@ -1604,7 +1606,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
         logger.info(f"Token Calculation : stage 1.2 - Function calling {token_data}")
         function_calling_conversations.clear() # Clear the messages list because we do not need the system message, user message in this function
 
-    return data, additional_data,web_search_results, conversations
+    return data, additional_data, web_search_results, conversations
 
 async def call_maf(ticketId: str):
     client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, False)
@@ -1648,7 +1650,7 @@ async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list
         conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
     
 # --- Helper to serialize and write structured response to PDF ---
-async def write_response_to_pdf(pdf_content):
+async def write_response_to_pdf(pdf_content: str, file_name: str = "nia_response"):
     """
     Try to parse as StructuredSpendingAnalysis and pretty print if possible, else fallback to string.
     """
@@ -1684,7 +1686,7 @@ async def write_response_to_pdf(pdf_content):
             pdf_content = text
        
         # Write the content tot PDF file
-        await generate_pdf_from_text(pdf_content, "structured_output.pdf")
+        await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
     except Exception as ser_ex:
         logger.error(f"[PDF INTENT] Error serializing structured response: {ser_ex}")
         # Fallback: write to text file if PDF generation fails
@@ -1694,14 +1696,14 @@ async def write_response_to_pdf(pdf_content):
             os.makedirs(text_dir, exist_ok=True)
             
             # Write to text file as fallback
-            text_file_path = os.path.join(text_dir, "structured_output.txt")
+            text_file_path = os.path.join(text_dir, f"{file_name}.txt")
             with open(text_file_path, "w", encoding="utf-8") as f:
                 f.write(pdf_content)
             logger.info(f"[PDF INTENT] Fallback: Wrote content to text file at {text_file_path}")
         except Exception as text_ex:
             logger.error(f"[PDF INTENT] Error writing fallback text file: {text_ex}")
 
-async def generate_pdf_from_text(text: str, base_filename: str = "structured_output.pdf") -> str:
+async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf") -> str:
     pdf: FPDF = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -1717,7 +1719,7 @@ async def generate_pdf_from_text(text: str, base_filename: str = "structured_out
     os.makedirs(output_dir, exist_ok=True)
 
     # Always use the same filename, overwrite if exists
-    output_path = os.path.join(output_dir, "structured_output.pdf")
+    output_path = os.path.join(output_dir, file_name)
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     pdf.output(output_path)
     return output_path
