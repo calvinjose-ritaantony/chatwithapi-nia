@@ -1,6 +1,7 @@
 import os
 import logging
 import datetime as date
+from typing import List
 from bson import ObjectId
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.results import UpdateResult, InsertOneResult, DeleteResult
@@ -421,6 +422,15 @@ async def get_usecases(gpt_id: str):
     logger.info(f"Fetched usecases successfully.")
 
     return usecases
+
+async def get_usecases_list(gpt_id: str):
+    """
+    Fetch the list of usecase names
+    """
+    use_case_from_db = await get_usecases(gpt_id)
+    use_case_list: List[str] = [use_case["name"] for use_case in use_case_from_db]
+
+    return use_case_list
 
 async def get_prompts(gpt_id: str, use_case_name: str, user: str):
     """
