@@ -196,7 +196,7 @@ async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str):
                 logger.error(f"Error: {str(e)}", exc_info=True)
                 await socket_manager.send_json({"error": str(e), "type" : "error"}, websocket)
     except WebSocketDisconnect as we:
-        logger.error(f"Exception while socket handling {we.detail}", exc_info=True)
+        logger.error(f"Exception while socket handling {we.reason}", exc_info=True)
         socket_manager.disconnect(websocket, gpt_id)
 
 # WebSocket endpoint for streaming chat
