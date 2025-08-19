@@ -171,6 +171,7 @@ FUNCTION_CALLING_SYSTEM_MESSAGE = """
     - Your task to is to carefully analyze the query, conversation history and description of an image (optional) and decide if to make function/tool calling
     - Analyze the input query thoroughly to determine if additional context is needed if the use case is ```DOC_SEARCH```. If additional context would improve the response, set the ```get_extra_data``` parameter to true when calling the ```get_data_from_azure_search``` function. The default value for ```get_extra_data``` is false.
     - Don't make any assumptions about what values, arguments to use with functions. Ask for clarification if a user request is ambiguous.
+    - You must NOT execute or return any tool calls if the user’s query is not clearly relevant to the current use case.
     - Only use the functions and parameters you have been provided with.
 """
 
@@ -287,6 +288,8 @@ USE_CASE_CONFIG = {
         - If applicable, note the date range
         - For username searches, calculate total order value per customer
         - Present order details (IDs, products, prices, status) in the user's preferred format or the most appropriate format
+        - If a request is out of scope for the current use case, do not generate any response except to state: 'This query is out of scope
+        - Only provide responses that are directly relevant to the current use case. If the input is unrelated or off-topic, do not generate any content and clearly state that it is outside the scope
         - If the query is unclear or no orders match, provide helpful suggestions
 
         Remember to maintain a professional, helpful tone throughout your response.
