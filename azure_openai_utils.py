@@ -1,6 +1,7 @@
-
 import io
 from typing import Any, List
+
+from mongo_service import get_usecases_list
 
 from fpdf import FPDF
 from data.NiaTool import NiaTool
@@ -37,7 +38,7 @@ from standalone_programs.image_analyzer import analyze_image
 from dotenv import load_dotenv # For environment variables (recommended)
 
 from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases
-from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME, USE_CASE_CONFIG, CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern
+from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern #USE_CASE_CONFIG,
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
@@ -97,6 +98,8 @@ DEFAULT_FOLLOW_UP_QUESTIONS = ["I would like to know more about this topic", "I 
 blob_service_client = BlobServiceClient(f"https://{AZURE_BLOB_STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
     credential=AZURE_BLOB_STORAGE_ACCESS_KEY
 )
+
+USE_CASE_CONFIG = {}
 
 async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: str, stream: bool) -> AsyncAzureOpenAI:
     #logger.info(f"delimiter: {delimiter} \ndefault_model_name: {default_model_name} \necomm_model_name: {ecomm_model_name} \nazure_endpoint: {azure_endpoint} \napi_key: {api_key} \napi_version: {api_version} \nsearch_endpoint: {search_endpoint} \nsearch_key: {search_key} \nsearch_index: {search_index}")
@@ -980,7 +983,7 @@ async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, 
         logger.error(f"Error occurred while fetching model response: {e}", exc_info=True)
         return StreamingResponse(iter([str(e)]), media_type="text/event-stream")
     
-async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, USE_CASE_CONFIG: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
 
     logger.info(f"USE_CASE : {use_case}")
     USER_PROMPT = USE_CASE_CONFIG[use_case]["user_message"]
@@ -1131,10 +1134,13 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     use_rag = bool(gpt["use_rag"])
     image_response = ""
     DEFAULT_IMAGE_RESPONSE = ""
+
+    gpt_id = str(gpt["_id"])
+    USE_CASE_CONFIG = await update_use_case_config(gpt_id)
  
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
-    role_information, model_configuration = await get_role_information(use_case) if use_rag else ("AI Assistant", model_configuration)
+    role_information, model_configuration = await get_role_information(use_case, USE_CASE_CONFIG) if use_rag else ("AI Assistant", model_configuration)
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
  
     # Fetch the thinking process for the selected use case
@@ -1220,6 +1226,10 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         if web_search_results is None or web_search_results == "":
             web_search_results = "No Data from Web Search"
 
+##########
+        
+###########
+
         USER_PROMPT = USE_CASE_CONFIG.get(use_case, {}).get("user_message", "{query}")
 
         conversations.append({
@@ -1249,12 +1259,11 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
  
         # Step 2 : Function Calling
         if image_response is not None and image_response.get("model_response") is not None and image_response.get("model_response") != "":
-            await preprocessForRAG(user_message, image_response.get("model_response"), use_case, gpt, conversations, model_configuration, socket_manager, websocket)
-
+            await preprocessForRAG(user_message, image_response.get("model_response"), use_case, gpt, conversations, model_configuration, USE_CASE_CONFIG, socket_manager, websocket)
     elif use_rag and not has_image:
         logger.info("CASE 3 : RAG and No Image")
         proceed = True
-        await preprocessForRAG(user_message, DEFAULT_IMAGE_RESPONSE, use_case, gpt, conversations, model_configuration, socket_manager, websocket)
+        await preprocessForRAG(user_message, DEFAULT_IMAGE_RESPONSE, use_case, gpt, conversations, model_configuration, USE_CASE_CONFIG, socket_manager, websocket)
         conversations.append({"role": "user", "content": user_message})
     else:
         logger.info("CASE 4 : No RAG and No Image")
@@ -1316,7 +1325,8 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
  
     return response
 
-async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool,socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+
+async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, USE_CASE_CONFIG: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     """
     # PREREQUISITES
         pip install azure-identity
@@ -1650,6 +1660,16 @@ async def get_use_case(gpt: GPTData) -> str:
 
     return use_case
 
+##################
+
+async def update_use_case_config(gpt_id: str):
+   
+    usecases_list = await get_usecases(gpt_id)  # handle null condition 
+    USE_CASE_CONFIG = {uc["name"]: uc for uc in usecases_list if "name" in uc}
+    return USE_CASE_CONFIG
+
+###############
+
 async def construct_model_configuration(model_configuration) -> ModelConfiguration:
     """
     Construct the model configuration based on the GPT data and provided model configuration.
@@ -1873,7 +1893,7 @@ def base64_to_image(base64_string: str, save_path=None, filename=None):
         logging.error(f"Error converting base64 to image: {e}", exc_info=True)
         return None, None
     
-async def get_role_information(use_case):
+async def get_role_information(use_case, USE_CASE_CONFIG: dict):
     role_information = "e-commerce analytics agent"
     model_configuration = DEFAULT_MODEL_CONFIGURATION
 
