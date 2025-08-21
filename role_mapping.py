@@ -276,4 +276,3 @@ For each image, provide TWO distinct sections:\n"
     "Format your response as two clearly labeled sections with no extraneous information."
 """
 
-#print(USE_CASE_CONFIG.keys())
