@@ -197,7 +197,7 @@ async def get_data_from_web_search(search_query: str, gpt: GPTData, region: str 
 
     if usecase != "DEFAULT" and socket_manager is not None:
         logger.info(f"Performing Web Search  {usecase}")
-        await socket_manager.send_json({"response": "Performing Web Search", "type": "thinking"}, websocket)
+        await socket_manager.send_json({"response": f"Performing Web Search", "type": "thinking"}, websocket)
 
     if search_query is None or search_query.strip() == "":
         return search_summary
@@ -255,7 +255,14 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         model_response = response.choices[0].message.content
         logger.info(f"Full Model Response is {response}")
 
-        await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response,socket_manager, websocket)
+        await do_post_response_processing(user_query=user_query, 
+                                          gpt=gpt, 
+                                          model_configuration=model_configuration, 
+                                          use_case=use_case, 
+                                          model_response=model_response, 
+                                          use_case_config=use_case_config, 
+                                          socket_manager=socket_manager, 
+                                          websocket=websocket)
 
         
         if model_response is None or model_response == "":
@@ -293,7 +300,14 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             model_response = response.choices[0].message.content
             logger.info(f"Retry Model Response is {response}")
 
-            await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response,socket_manager, websocket)
+            await do_post_response_processing(user_query=user_query, 
+                                          gpt=gpt, 
+                                          model_configuration=model_configuration, 
+                                          use_case=use_case, 
+                                          model_response=model_response, 
+                                          use_case_config=use_case_config, 
+                                          socket_manager=socket_manager, 
+                                          websocket=websocket)
 
             if model_response is None or model_response == "":
                 main_response = "No Response from Model. Please try again."
@@ -346,8 +360,14 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             model_response = response.choices[0].message.content
             logger.info(f"Alternate Model Response is {response}")
 
-            await do_post_response_processing(user_query, gpt, model_configuration, use_case, model_response, socket_manager, websocket
-)
+            await do_post_response_processing(user_query=user_query, 
+                                          gpt=gpt, 
+                                          model_configuration=model_configuration, 
+                                          use_case=use_case, 
+                                          model_response=model_response, 
+                                          use_case_config=use_case_config, 
+                                          socket_manager=socket_manager, 
+                                          websocket=websocket)
 
             if model_response is None or model_response == "":
                 raise ValueError("No Response from Model. Please try again.")
@@ -999,7 +1019,16 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
     #logger.info(f"USE_CASE_CONFIG[{use_case}]: {USER_PROMPT}")
 
     #context_information, additional_context_information, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration, "pre_response")
-    context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration,"pre_response",socket_manager, websocket)
+    context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(search_query=user_message, 
+                                                                                                                            image_response=image_response, 
+                                                                                                                            use_case=use_case, 
+                                                                                                                            gpt=gpt, 
+                                                                                                                            conversations=conversations, 
+                                                                                                                            model_configuration=model_configuration,
+                                                                                                                            scenario="pre_response",
+                                                                                                                            use_case_config=USE_CASE_CONFIG,
+                                                                                                                            socket_manager=socket_manager, 
+                                                                                                                            websocket=websocket)
     
     if web_search_results is None or web_search_results == "":
         web_search_results = "No Data from Web Search"
@@ -1222,16 +1251,16 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         
         # Step 2 : Pass the image response to the function calling to determine the next steps
         context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(
-            user_message,      # The user's text query
-            image_result,      # Pass the image analysis result as context
-            use_case,          # Your current use case string
-            gpt,
-            conversations,
-            model_configuration,
-            "post_response",
-            USE_CASE_CONFIG,
-            socket_manager, 
-            websocket)
+            search_query=user_message,      # The user's text query
+            image_response=image_result,      # Pass the image analysis result as context
+            use_case=use_case,          # Your current use case string
+            gpt=gpt,
+            conversations=conversations,
+            model_configuration=model_configuration,
+            scenario="post_response",
+            use_case_config=USE_CASE_CONFIG,
+            socket_manager=socket_manager, 
+            websocket=websocket)
            
         if web_search_results is None or web_search_results == "":
             web_search_results = "No Data from Web Search"
@@ -1847,7 +1876,7 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     model_response = response.choices[0].message.content
     return response, model_response
 
-async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
     pdf_intent_conversation = [
         {"role": "user", "content": user_query}, 
@@ -1855,7 +1884,16 @@ async def do_post_response_processing(user_query: str, gpt: GPTData, model_confi
     ]
     logger.info(f"[PDF INTENT] Calling OpenAI with tools")
     
-    await determineFunctionCalling(user_query, "No Data", use_case, gpt, pdf_intent_conversation, model_configuration, "post_response",socket_manager, websocket)
+    await determineFunctionCalling(search_query=user_query, 
+                                   image_response="No Data", 
+                                   use_case=use_case, 
+                                   gpt=gpt, 
+                                   conversations=pdf_intent_conversation, 
+                                   model_configuration=model_configuration, 
+                                   scenario="post_response", 
+                                   use_case_config=use_case_config,
+                                   socket_manager=socket_manager, 
+                                   websocket=websocket)
 
 
 def base64_to_image(base64_string: str, save_path=None, filename=None):
