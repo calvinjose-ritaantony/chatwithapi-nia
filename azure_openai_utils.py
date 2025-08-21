@@ -193,9 +193,11 @@ async def get_data_from_web_search(search_query: str, gpt: GPTData, region: str 
 
     search_summary = "No Data from Web Search"
     logger.info(f"Running web search: query={search_query}, region={region}")
-    if get_use_case(gpt) != "DEFAULT":
-        logger.info(f"Performing Web Search  {get_use_case(gpt)}")
-        await socket_manager.send_json({"response": "Performing Web Search ", "type": "thinking"}, websocket)
+    usecase: str = await get_use_case(gpt)
+
+    if usecase != "DEFAULT" and socket_manager is not None:
+        logger.info(f"Performing Web Search  {usecase}")
+        await socket_manager.send_json({"response": "Performing Web Search", "type": "thinking"}, websocket)
 
     if search_query is None or search_query.strip() == "":
         return search_summary
@@ -208,7 +210,7 @@ async def get_data_from_web_search(search_query: str, gpt: GPTData, region: str 
 
     return search_summary
 
-async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration, conversations, use_case, role_information, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict,  role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     model_response = "No Response from Model"
     main_response = ""
     total_tokens = 0
@@ -269,7 +271,9 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         logger.info(f"Retrying with next endpoint")
         
         client: AsyncAzureOpenAI = await NiaAzureOpenAIClient().retry_with_next_endpoint()
-        await socket_manager.send_json({"response" : f"Encountered APIConnectionError : Retrying with next endpoint. <br> {client._azure_endpoint} ", "type": "thinking"}, websocket)
+
+        if socket_manager is not None:
+            await socket_manager.send_json({"response" : f"Encountered APIConnectionError : Retrying with next endpoint. <br> {client._azure_endpoint} ", "type": "thinking"}, websocket)
         
         try:
             response: ChatCompletion = await client.chat.completions.create(
@@ -303,7 +307,9 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             logger.error(f"Retry also failed: {final_ex}", exc_info=True)
             total_tokens = len(token_encoder.encode(str(conversations)))
             main_response = f"All Azure OpenAI endpoints failed. Please try again later.\n\n Exception Details : {str(final_ex)}"
-            await socket_manager.send_json({"response" : main_response, "type": "thinking"}, websocket)
+
+            if socket_manager is not None:
+                await socket_manager.send_json({"response" : main_response, "type": "thinking"}, websocket)
 
     except (RateLimitError) as retryable_ex:
         logger.warning(f"Retryable error: {type(retryable_ex).__name__} - {retryable_ex}", exc_info=True)
@@ -384,7 +390,9 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         # If we exhausted the loop with no success, go to the next subscription
         if not success:
             logger.info("All models on this endpoint exhausted – switching subscription")
-            await socket_manager.send_json({"response" : f"Encountered RateLimitError : All models on this endpoint exhausted – switching subscription ", "type": "thinking"}, websocket)
+
+            if socket_manager is not None:
+                await socket_manager.send_json({"response" : f"Encountered RateLimitError : All models on this endpoint exhausted – switching subscription ", "type": "thinking"}, websocket)
 
             client: AsyncAzureOpenAI = await NiaAzureOpenAIClient().retry_with_next_endpoint()
 
@@ -412,7 +420,8 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         main_response = f"Error occurred while fetching model response: \n\n" + str(e)
     finally:
          # Log the response to database
-        await socket_manager.send_json({"response" : f"Adding the conversation to memory", "type": "thinking"}, websocket)
+        if socket_manager is not None:
+            await socket_manager.send_json({"response" : f"Adding the conversation to memory", "type": "thinking"}, websocket)
         await saveAssistantResponse(main_response, gpt, conversations)
         
     return {
@@ -422,7 +431,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         "reasoning" : reasoning
     }
 
-async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration, conversations, use_case, role_information):
+async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict, role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
      # This client is asynchronous and needs await signal. Set stream=True
     try:
         # Get Azure Open AI Client and fetch response
@@ -1074,7 +1083,8 @@ async def processImage(streaming_response: bool, save_response_to_db: bool, user
                 "user": gpt["user"],
                 "use_case_id": gpt["use_case_id"]
             })
-            if get_use_case(gpt) != "DEFAULT":
+
+            if await get_use_case(gpt) != "DEFAULT" and socket_manager is not None:
                 await socket_manager.send_json({"response" :"Processing the Image", "type": "thinking"}, websocket)
 
             token_data = await get_token_count(gpt["name"], gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
@@ -1148,8 +1158,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         thinking_process_for_usecases: list = REASONING_DATA[use_case]
         logger.info(thinking_process_for_usecases)
 
-    if use_case != "DEFAULT":
-        # await socket_manager.send_json({"response" : thinking_process_for_usecases[0], "type": "thinking"}, websocket)
+    if use_case != "DEFAULT" and socket_manager is not None:
         await socket_manager.send_json({"response" : f" Identified the Usecase : {use_case.replace('_', ' ').title()}", "type": "thinking"}, websocket)
 
     # Step 2 : Get last conversation history (6 messages) for the given gpt_id and model_name
@@ -1220,15 +1229,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             conversations,
             model_configuration,
             "post_response",
+            USE_CASE_CONFIG,
             socket_manager, 
             websocket)
            
         if web_search_results is None or web_search_results == "":
             web_search_results = "No Data from Web Search"
-
-##########
-        
-###########
 
         USER_PROMPT = USE_CASE_CONFIG.get(use_case, {}).get("user_message", "{query}")
 
@@ -1288,15 +1294,16 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
 
     # Azure OpenAI API call
     if proceed == True:
-        if use_case != "DEFAULT":
+        if use_case != "DEFAULT" and socket_manager is not None:
             await socket_manager.send_json({"response" : "Send Data to Model for Response Generation", "type": "thinking"}, websocket)
+
         if streaming_response:
-            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, role_information)
+            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, role_information, websocket, socket_manager)
         else:
             if use_case != "DEFAULT":
                 pass
                 # await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
-            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, role_information, websocket, socket_manager)
+            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, role_information, websocket, socket_manager)
             logger.info(f"Response from model: {response}")
 
     # Sometimes model returns "null" which is not supported by python
@@ -1306,8 +1313,9 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         response = "No response from model"
     else:
         pass
- 
-    await socket_manager.send_json({"response" : "Response Generated", "type": "thinking"}, websocket)
+    
+    if socket_manager is not None:
+        await socket_manager.send_json({"response" : "Response Generated", "type": "thinking"}, websocket)
        
     logger.info(f"Conversation : {conversations}")
     logger.info(f"Tokens in the conversation {len(token_encoder.encode(str(conversations)))}")
@@ -1326,7 +1334,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     return response
 
 
-async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, USE_CASE_CONFIG: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     """
     # PREREQUISITES
         pip install azure-identity
@@ -1349,8 +1357,10 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
 
     logger.info(f"Client ID: {client_id} \nClient Secret: {client_secret} \nTenant ID: {tenant_id}")
     use_cases = await get_usecases(gpt_id)
-    if use_cases != "DEFAULT":
+
+    if use_case != "DEFAULT"  and socket_manager is not None:
         await socket_manager.send_json({"response": "Starting Azure Search for data...", "type": "thinking"}, websocket)
+
     # Extract the matching use case from the collection
     use_case_data = next((uc for uc in use_cases if uc["name"] == use_case), None)
 
@@ -1385,7 +1395,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
 
         # Get the documents
         if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH":
-            selected_fields = USE_CASE_CONFIG[use_case]["fields_to_select"]
+            selected_fields = use_case_config[use_case]["fields_to_select"]
         else:
             selected_fields = ALL_FIELDS 
 
@@ -1395,7 +1405,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         #selected_fields = ["user_name", "order_id", "product_description", "brand", "order_date", "status", "delivery_date"]
         search_results = azure_ai_search_client.search(search_text=search_query, 
                                                  #top = 5,
-                                                 top=USE_CASE_CONFIG.get(use_case, {}).get("document_count", 30), 
+                                                 top=use_case_config.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
                                                 #  semantic_configuration_name=USE_CASE_CONFIG[use_case]["semantic_configuration_name"],
@@ -1412,7 +1422,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
             )
 
             additional_search_results = additional_azure_ai_search_client.search(search_text=search_query, 
-                                                 top=USE_CASE_CONFIG.get(use_case, {}).get("document_count", 30), 
+                                                 top=use_case_config.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
                                                  semantic_configuration_name = NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME,
@@ -1514,7 +1524,7 @@ async def summarize_conversations(chat_history, gpt):
 
     return conversation_summary
 
-async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     function_calling_conversations = []
     data = []
     additional_data = []
@@ -1586,6 +1596,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         use_case=function_args.get("use_case"),
                         get_extra_data= function_args.get("get_extra_data") if use_case == "DOC_SEARCH" else False, # Only for doc search the fetch of extra data must be enabled
+                        use_case_config=use_case_config,
                         gpt_id = gpt_id,
                         socket_manager=socket_manager,
                         websocket=websocket      
@@ -1702,8 +1713,7 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
             return
         logger.info("Generating PDF for use case")
 
-        if get_use_case(gpt) != "DEFAULT":
-
+        if await get_use_case(gpt) != "DEFAULT" and socket_manager is not None:
             await socket_manager.send_json({"response": "Generating the pdf...", "type": "thinking"}, websocket)
             logger.info("Thinking message sent successfully")
             

@@ -46,6 +46,10 @@ GPT_4o_API_KEY=os.getenv("GPT4O_API_KEY")
 GPT_4o_ENDPOINT_URL=os.getenv("GPT4O_ENDPOINT_URL")
 GPT_4o_API_VERSION = os.getenv("GPT4O_API_VERSION")
 
+AZURE_ENDPOINT_URL_2 = os.getenv("AZURE_ENDPOINT_URL_2")
+OPENAI_API_KEY_2 = os.getenv("OPENAI_API_KEY_2")
+API_VERSION_2 =os.getenv("API_VERSION_2")
+
  # Azure Open AI Clients for different tasks
 azure_openai_client =  AsyncAzureOpenAI(
         azure_endpoint=GPT_4o_ENDPOINT_URL,
