@@ -145,3 +145,13 @@ git reset HEAD~         # Undo the last commit (but keep changes staged)
 git restore --staged abc.py   # Unstage abc.py
 git rm --cached abc.py        # Remove from Git but keep it locally (optional)
 git commit -m "Removed abc.py from commit"
+
+
+To Rebase the branch to the latest main branch
+# First, make sure your local main is up-to-date
+git checkout main
+git pull origin main
+
+# Now move your branch to the latest main
+git checkout feature-branch
+git rebase main
