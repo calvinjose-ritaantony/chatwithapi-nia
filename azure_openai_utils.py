@@ -124,7 +124,7 @@ async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: s
     
     return client
 
-def get_azure_search_parameters(search_endpoint: str, index_name: str, search_key: str, role_information: str, index_fields: list):
+def get_azure_search_parameters(search_endpoint: str, index_name: str, search_key: str, index_fields: list):
     extra_body = {
         "data_sources": [{
             "type": "azure_search",
@@ -149,8 +149,6 @@ def get_azure_search_parameters(search_endpoint: str, index_name: str, search_ke
                 #"strictness": 3,
                 "query_type": "semantic",
                 "semantic_configuration": NIA_SEMANTIC_CONFIGURATION_NAME, #"default",
-                #"role_information": instructions,
-                "role_information": role_information
             }
         }]
     }
@@ -458,7 +456,7 @@ async def handle_ratelimit_exception_stream(gpt: GPTData, model_configuration: M
                         )
                         yield full_response_content
 
-async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict,  role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     model_response = "No Response from Model"
     main_response = ""
     total_tokens = 0
@@ -473,15 +471,6 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
         extra_body = {}
         
-        if gpt["use_rag"] == True:
-            logger.info("Assigning additional search parameters for E-commerce model")
-            if use_case == "REVIEW_BYTES":
-                #extra_body = get_azure_search_parameters(search_endpoint, review_bytes_index, search_key, role_information, review_bytes_index_fields)
-                pass
-            else:
-                #extra_body = get_azure_search_parameters(search_endpoint, search_index, search_key, role_information, ecomm_rag_demo_index_fields)
-                pass
-
         response: ChatCompletion = await client.chat.completions.create(
             model=gpt["name"],
             messages=conversations,
@@ -571,7 +560,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         "reasoning" : reasoning
     }
 
-async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict, role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
      # This client is asynchronous and needs await signal. Set stream=True
     try:
         # Get Azure Open AI Client and fetch response
@@ -579,15 +568,6 @@ async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, mod
         model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
         extra_body = {}
 
-        if gpt["use_rag"] == True:
-            logger.info("Assigning additional search parameters for E-commerce model")
-            if use_case == "REVIEW_BYTES":
-                #extra_body = get_azure_search_parameters(search_endpoint, review_bytes_index, search_key, role_information, review_bytes_index_fields)
-                pass
-            else:
-                #extra_body = get_azure_search_parameters(search_endpoint, search_index, search_key, role_information, ecomm_rag_demo_index_fields)
-                pass
-        
         full_response_content = ""
         
         async def stream_processor():
@@ -1009,7 +989,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
  
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
-    role_information, model_configuration = await get_role_information(use_case, USE_CASE_CONFIG) if use_rag else ("AI Assistant", model_configuration)
+    model_configuration = await get_model_configuration(use_case, USE_CASE_CONFIG) if use_rag else (model_configuration)
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
  
     # Fetch the thinking process for the selected use case
@@ -1157,12 +1137,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             await socket_manager.send_json({"response" : "Send Data to Model for Response Generation", "type": "thinking"}, websocket)
 
         if streaming_response:
-            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, role_information, websocket, socket_manager)
+            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, websocket, socket_manager)
         else:
             if use_case != "DEFAULT":
                 pass
                 # await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
-            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, role_information, websocket, socket_manager)
+            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, websocket, socket_manager)
             logger.info(f"Response from model: {response}")
 
     # Sometimes model returns "null" which is not supported by python
@@ -1771,15 +1751,12 @@ def base64_to_image(base64_string: str, save_path=None, filename=None):
         logging.error(f"Error converting base64 to image: {e}", exc_info=True)
         return None, None
     
-async def get_role_information(use_case, USE_CASE_CONFIG: dict):
-    role_information = "e-commerce analytics agent"
+async def get_model_configuration(use_case, USE_CASE_CONFIG: dict):
     model_configuration = DEFAULT_MODEL_CONFIGURATION
 
-    # Mapping of use cases to role_information values
     if use_case and use_case in USE_CASE_CONFIG:
-        role_information = USE_CASE_CONFIG[use_case]["role_information"]
         model_configuration = USE_CASE_CONFIG[use_case]["model_configuration"]
 
-    logger.info(f"Use_case: {use_case} \n Role Information: {role_information} \n Model Configuration: {model_configuration}")
+    logger.info(f"Use_case: {use_case} \n Model Configuration: {model_configuration}")
     
-    return role_information, model_configuration
+    return model_configuration
