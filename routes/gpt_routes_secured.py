@@ -9,7 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Query, Request, Security, UploadFile, Body, File, Form, HTTPException, Depends
 from fastapi import WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse,FileResponse
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 from azure.identity import ClientSecretCredential
 from azure.core.exceptions import AzureError
@@ -25,6 +25,9 @@ from azure_openai_utils import generate_response
 from mongo_service import fetch_chat_history_for_use_case, get_gpt_by_id, create_new_gpt, get_gpts_for_user, update_gpt, delete_gpt, delete_gpts, delete_chat_history, fetch_chat_history, get_usecases, update_gpt_instruction, get_collection, get_prompts, update_prompt, delete_prompt, update_usecases
 from prompt_utils import PromptValidator
 from app_config import socket_manager
+
+
+from azure_openai_utils import generate_pdf_from_text, PDF_CONTENT_STORE
 
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -812,3 +815,12 @@ async def getDeployments2():
 async def getUserName(request:Request, callee: str):
     #return getSessionUser(request)
     return "Dharmeshwaran S"
+
+
+@router.get("/api/download-pdf/{file_name}")
+async def download_pdf(file_name: str):
+    pdf_content = PDF_CONTENT_STORE.get(file_name)
+    if not pdf_content:
+        raise HTTPException(status_code=404, detail="PDF content not found")
+    output_path = await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
+    return FileResponse(output_path, media_type="application/pdf", filename=f"{file_name}.pdf")

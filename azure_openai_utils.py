@@ -1582,7 +1582,9 @@ async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list
         })
 
         conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
-    
+
+PDF_CONTENT_STORE = {}
+
 # --- Helper to serialize and write structured response to PDF ---
 async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str = "nia_response", socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     """
@@ -1627,7 +1629,13 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
             pdf_content = text
 
         # Write the content to PDF file
-        await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
+       # await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
+
+        PDF_CONTENT_STORE[file_name] = pdf_content   #store the pdf content
+        download_link = f"/api/download-pdf/{file_name}"
+        logger.info(f"%%%%%%%%%%%%%%%%%%%%%%  PDF download link generated: {download_link}")
+        return download_link
+
     except Exception as ser_ex:
         logger.error(f"[PDF INTENT] Error serializing structured response: {ser_ex}")
         # Fallback: write to text file if PDF generation fails
