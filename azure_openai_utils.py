@@ -38,12 +38,12 @@ from standalone_programs.image_analyzer import analyze_image
 from dotenv import load_dotenv # For environment variables (recommended)
 
 from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases
-from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern #USE_CASE_CONFIG,
+from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern, GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE #USE_CASE_CONFIG,
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
 from thinking_process import REASONING_DATA
-from tool_utils import azure_ai_search_tool, web_search_tool, write_response_to_pdf_tool
+from tool_utils import azure_ai_search_tool, web_search_tool, write_response_to_pdf_tool, get_data_from_gentell_search
 from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
@@ -1253,7 +1253,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         logger.info(f"Search Client: {azure_ai_search_client} \nSearch Query: {search_query}")
 
         # Get the documents
-        if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH":
+        if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR":
             selected_fields = use_case_config[use_case]["fields_to_select"]
         else:
             selected_fields = ALL_FIELDS 
@@ -1407,9 +1407,17 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
 
     # Get the tools and tool definitions
     tool_names, tool_definitions = await get_tools(gpt_id=gpt["_id"], use_case=use_case, scenario=scenario)
+    logger.info(f"Tools available for function calling : {tool_names}")
+    logger.info(f"Conversation History Passed to function calling model : {conversations}")
 
     # Initial user message
-    function_calling_conversations.append({
+    if use_case == "GENTELL_WOUND_ADVISOR":
+            function_calling_conversations.append({
+                                              "role": "system", 
+                                              "content":GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE.format(tools=tool_names)
+                                          })
+    else:
+        function_calling_conversations.append({
                                               "role": "system", 
                                               "content":FUNCTION_CALLING_SYSTEM_MESSAGE.format(tools=tool_names)
                                           })
@@ -1425,6 +1433,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
 
     response_from_function_calling_model = ""
     function_calling_model_response = ""
+    logger.info(f"Function calling conversations : {function_calling_conversations}")
 
     try:
         # First API call: Ask the model to use the function
@@ -1438,10 +1447,11 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
             seed=200
         )
 
-        logger.info(f"Full function calling response : {response_from_function_calling_model}")
+        # logger.info(f"Full function calling response : {response_from_function_calling_model}")
 
         # Process the model's response
         function_calling_model_response = response_from_function_calling_model.choices[0].message
+        logger.info(f"Function calling model response : {function_calling_model_response}")
         #function_calling_conversations.append(response_message)
 
         # Handle function calls
@@ -1455,6 +1465,19 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         use_case=function_args.get("use_case"),
                         get_extra_data= function_args.get("get_extra_data") if use_case == "DOC_SEARCH" else False, # Only for doc search the fetch of extra data must be enabled
+                        use_case_config=use_case_config,
+                        gpt_id = gpt_id,
+                        socket_manager=socket_manager,
+                        websocket=websocket      
+                    )
+                elif tool_call.function.name == "get_data_from_gentell_search":
+                    logger.info("get_data_from_gentell_search called")
+                    function_args = json.loads(tool_call.function.arguments)
+                    logger.info(f"Function arguments: {function_args}")  
+                    data, additional_data = await get_data_from_azure_search(
+                        search_query=function_args.get("search_query"),
+                        use_case=function_args.get("use_case"),
+                        get_extra_data= False, # Only for doc search the fetch of extra data must be enabled
                         use_case_config=use_case_config,
                         gpt_id = gpt_id,
                         socket_manager=socket_manager,
@@ -1647,6 +1670,7 @@ async def get_tools(gpt_id: str, use_case: str, scenario: str):
 
     # Get all the tools
     tools: List[NiaTool] = [
+        await get_data_from_gentell_search(gpt_id, use_case),
         await azure_ai_search_tool(gpt_id, use_case),
         await web_search_tool(),
         await write_response_to_pdf_tool()

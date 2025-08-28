@@ -520,5 +520,36 @@ REASONING_DATA = {
           "action": "Crafting response",
           "details": "Creating empathetic and solution-focused reply"
         }
-      ]
+      ],"GENTELL_WOUND_ADVISOR":[
+        {
+          "step": "Patient Profile Analysis",
+          "action": "Understanding patient background",
+          "details": "Collecting details such as age, comorbidities (e.g., diabetes, vascular disease), and overall health status"
+        },
+        {
+          "step": "Wound Assessment",
+          "action": "Clarifying wound type and severity",
+          "details": "Asking targeted questions about wound type (pressure ulcer, diabetic foot ulcer, venous ulcer, skin tear), size, depth, and healing stage"
+        },
+        {
+          "step": "Exudate & Infection Check",
+          "action": "Evaluating wound drainage and infection signs",
+          "details": "Determining exudate level (low, moderate, heavy) and checking for odor, redness, or other infection indicators"
+        },
+        {
+          "step": "Product Category Matching",
+          "action": "Identifying suitable Gentell product types",
+          "details": "Mapping wound characteristics to product categories (foam dressings, alginate dressings, hydrocolloids, collagen, etc.)"
+        },
+        {
+          "step": "Safety & Contraindications",
+          "action": "Ensuring product suitability",
+          "details": "Cross-checking against contraindications such as allergies, wound depth, or patient conditions"
+        },
+        {
+          "step": "Recommendation Generation",
+          "action": "Providing wound care guidance",
+          "details": "Compiling recommended Gentell products with usage instructions, clinical rationale, and wound care tips"
+        }
+]
 }

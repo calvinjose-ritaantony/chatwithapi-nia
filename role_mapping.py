@@ -35,6 +35,7 @@ NIA_TKE_INCIDENTS_SEMANTIC_CONFIGURATION=os.getenv("NIA_TKE_INCIDENTS_SEMANTIC_C
 NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME=os.getenv("NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME")
 
 NIA_TOOL_FUNCTIONS = [
+    "get_data_from_gentell_search(Function that allows NIA to get data from Azure AI Search related to Gentell wound care products and clinical guidance)",
     "write_structured_response_to_pdf (write structured response to pdf)",
     "get_data_from_azure_search (get data from azure ai search to get e-commerce order related details)",
     "get_data_from_web_search (get data from web search to get latest information)", 
@@ -175,6 +176,29 @@ FUNCTION_CALLING_SYSTEM_MESSAGE = """
     - Only use the functions and parameters you have been provided with.
 """
 
+GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE = """
+You are an AI assistant for Gentell, a wound care AI agent.  
+Your **main job is to recommend wound care products from the Gentell store**, never from your own knowledge.  
+You must always use the provided functions to fetch product data before giving recommendations.
+
+- Tools available: <tools>{tools}</tools>
+
+- Conversation handling rules:
+    * If the user starts a **new conversation / initial query** you must ask clarifying follow-up questions (wound type, size/severity, exudate level, patient conditions, allergies, etc.).
+    * If the user provides a **follow-up answer to clarifying questions**, you must immediately call the ```get_data_from_gentell_search``` function and recommend suitable products.
+    * If, after recommendations, the user starts a **new query (even in the same conversation)**, treat it as a new initial query and repeat the process (clarify → recommend).
+
+- Important rules:
+    * Do NOT provide product recommendations or summaries from your own knowledge.
+    * Do NOT rephrase or “answer” the query without calling the Gentell function.
+    * Once you have enough information, your ONLY valid action is to call ```get_data_from_gentell_search``` and base your response on its results.
+    * If the query is unrelated to wound care, do not call any function.
+
+Your job is always: **clarify if needed, then recommend Gentell products using the store data.**
+"""
+
+
+
 FUNCTION_CALLING_USER_MESSAGE = """
     User Query : {query}
     Use Case : {use_case}
@@ -183,7 +207,29 @@ FUNCTION_CALLING_USER_MESSAGE = """
     Conversation History : {conversation_history}
 """
 
-USE_CASES_LIST = ['SEARCHING_ORDERS', 'SUMMARIZE_PRODUCT_REVIEWS', 'TRACK_ORDERS', 'TRACK_ORDERS_TKE', 'MANAGE_TICKETS', 'ANALYZE_SPENDING_PATTERNS', 'CUSTOMER_COMPLAINTS', 'PRODUCT_COMPARISON', 'CUSTOMIZED_RECOMMENDATIONS', 'GENERATE_REPORTS', 'PRODUCT_INFORMATION', 'COMPLAINTS_AND_FEEDBACK', 'HANDLE_FAQS', 'SEASONAL_SALES', 'GENERATE_MAIL_PROMOTION', 'GENERATE_MAIL_ORDERS', 'REVIEW_BYTES', 'DOC_SEARCH']
+# GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE = """
+#     You are an extremely powerful AI assistant with analytic skills in extracting context and deciding whether to call one or more functions to get context data to support an e-commerce store AI agent.
+#     - You have access to these tools : <tools>{tools}</tools>
+#     - Your task to is to carefully analyze the presented query, conversation history and description of an image (optional) and decide if to make function/tool calling
+#     - Don't make any assumptions about what values, arguments to use with functions. Ask for clarification if a user request is ambiguous.
+#     - You must NOT execute or return any tool calls if the user’s query is not clearly relevant to the current use case.
+#     - Only use the functions and parameters you have been provided with.
+# """
+ 
+# GENTELL_FUNCTION_CALLING_USER_MESSAGE = """
+#  Analyze the given query and determine if to make function/tool calls to get relevant context data.
+ 
+#  - Return multiple tools/functions from the given tools list, if required to get relevant context data
+ 
+#     <user_query> {query} </user_query>
+#     <rephrased_query>Re-phrase the user query to better capture intent and context, maintaining a formal tone and ensuring no key details are omitted for accurate results.</rephrased_query>
+#     <use_case> {use_case} </use_case>
+#     <conversation_history> {conversation_history} </conversation_history>
+#     <image_details> {image_details} </image_details>
+# """
+
+
+USE_CASES_LIST = ['SEARCHING_ORDERS', 'SUMMARIZE_PRODUCT_REVIEWS', 'TRACK_ORDERS', 'TRACK_ORDERS_TKE', 'MANAGE_TICKETS', 'ANALYZE_SPENDING_PATTERNS', 'CUSTOMER_COMPLAINTS', 'PRODUCT_COMPARISON', 'CUSTOMIZED_RECOMMENDATIONS', 'GENERATE_REPORTS', 'PRODUCT_INFORMATION', 'COMPLAINTS_AND_FEEDBACK', 'HANDLE_FAQS', 'SEASONAL_SALES', 'GENERATE_MAIL_PROMOTION', 'GENERATE_MAIL_ORDERS', 'REVIEW_BYTES', 'DOC_SEARCH', 'GENTELL_WOUND_ADVISOR']
 
 #Prompt 8 - CONTEXTUAL PROMPT USED FOR CONVERSATION SUMMARY
 CONTEXTUAL_PROMPT = """
