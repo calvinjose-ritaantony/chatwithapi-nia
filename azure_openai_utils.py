@@ -1632,7 +1632,7 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
        # await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
 
         PDF_CONTENT_STORE[file_name] = pdf_content   #store the pdf content
-        download_link = f"/api/download-pdf/{file_name}"
+        download_link = f"/download-pdf/{file_name}"
         logger.info(f"%%%%%%%%%%%%%%%%%%%%%%  PDF download link generated: {download_link}")
         return download_link
 
