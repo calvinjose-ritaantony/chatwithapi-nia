@@ -1,0 +1,21 @@
+Here is the delivery address confirmation for your Bluetooth Speaker order with reference ID OR00006:
+
+### Order Details
+- **Order ID:** OR00006
+- **Product Description:** Bluetooth Speaker
+- **Brand:** JBL
+- **Quantity:** 4
+- **Order Date:** 07-28-2024
+- **Delivery Date:** 08-01-2024
+- **Status:** Delivered
+
+### Delivery Address
+- **Address:** 22 Baker St, London, United Kingdom
+
+### Additional Information
+- **Payment Status:** Refund Issued
+- **Payment Method:** Debit Card
+- **Customer Name:** Daniel Wilson
+- **Contact Email:** daniel.wilson@gmail.com
+
+The order has been successfully delivered to the specified address in London. If you have any further questions or require assistance, please feel free to reach out.

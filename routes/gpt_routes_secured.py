@@ -28,6 +28,8 @@ from app_config import socket_manager
 
 
 from azure_openai_utils import generate_pdf_from_text, PDF_CONTENT_STORE
+from mongo_service import get_collection
+
 
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -233,21 +235,16 @@ async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str, access_token
                 
                 streaming_response = False
                 response = await generate_response(streaming_response, user_message, model_configuration, gpt, uploadedImage, socket_manager, websocket)
-                
-                if PDF_CONTENT_STORE:
-                    pdf_file_name = next(iter(PDF_CONTENT_STORE.keys()), None)       
-                    logger.info(f"&&&&&&&&&&&&&&&&&&&&&&&&&& PDF FILE NAME: {pdf_file_name}")            
 
                 payload = {
                     "response": response['model_response'], 
                     "total_tokens": response['total_tokens'] if response['total_tokens'] else 0, 
                     "follow_up_questions": response['follow_up_questions'],
                     "type": "chat_response",
-                    "file_name": pdf_file_name 
+                    "pdf_id": response['pdf_id']
                 }
 
                 await socket_manager.send_json(payload, websocket)
-
                 logger.info(f"$$$$$$$$$$$$$$ WebSocket response sent: {json.dumps(payload, ensure_ascii=False)}")
 
             except HTTPException as he:
@@ -828,12 +825,15 @@ async def getUserName(request:Request, callee: str):
     #return getSessionUser(request)
     return "Dharmeshwaran S"
 
-
-@router.get("/download-pdf/{file_name}")
-async def download_pdf(file_name: str):
-    pdf_content = PDF_CONTENT_STORE.get(file_name)
-    if not pdf_content:
+#fetch it back from mongo
+@router.get("/download-pdf/{pdf_id}")
+async def download_pdf_by_id(pdf_id: str):
+    pdfs_collection = await get_collection("pdfs")
+    pdf_doc = await pdfs_collection.find_one({"_id": ObjectId(pdf_id)})
+    if not pdf_doc:
         raise HTTPException(status_code=404, detail="PDF content not found")
+    pdf_content = pdf_doc.get("pdf_content")
+    file_name = pdf_doc.get("file_name", "nia_response")
     output_path = await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
     return FileResponse(output_path, media_type="application/pdf", filename=f"{file_name}.pdf")
 

@@ -47,6 +47,9 @@ from tool_utils import azure_ai_search_tool, web_search_tool, write_response_to_
 from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
+from mongo_service import save_pdf_content
+PDF_CONTENT_STORE = {}
+
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
 load_dotenv()  # Load environment variables from .env file
@@ -459,12 +462,15 @@ async def handle_ratelimit_exception_stream(gpt: GPTData, model_configuration: M
                         yield full_response_content
 
 async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict,  role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+    
+    pdf_id = None
+    
     model_response = "No Response from Model"
     main_response = ""
     total_tokens = 0
     follow_up_questions = []
     reasoning = ""
-
+    
     # This client is synchronous and doesn't need await signal. Set stream=False
 
     try:
@@ -503,7 +509,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         model_response = response.choices[0].message.content
         logger.info(f"Full Model Response is {response}")
 
-        await do_post_response_processing(user_query=user_query, 
+        pdf_id = await do_post_response_processing(user_query=user_query,                                  
                                           gpt=gpt, 
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
@@ -526,7 +532,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         logger.info(f"Retrying with next endpoint")
         main_response, follow_up_questions, total_tokens = await handle_api_connection_exception_standard(gpt=gpt, model_configuration=model_configuration, conversations=conversations, extra_body=extra_body,socket_manager=socket_manager,websocket=websocket)
         logger.info(f"Main Response after retry: {main_response}")
-        await do_post_response_processing(user_query=user_query, 
+        pdf_id = await do_post_response_processing(user_query=user_query, 
                                           gpt=gpt, 
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
@@ -541,7 +547,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         logger.info(f"Retrying with next models")
         main_response, follow_up_questions, total_tokens = await handle_ratelimit_exception_standard(gpt=gpt, model_configuration=model_configuration, conversations=conversations, extra_body=extra_body,socket_manager=socket_manager,websocket=websocket)
         logger.info(f"Main Response after retry: {main_response}")
-        await do_post_response_processing(user_query=user_query, 
+        pdf_id = await do_post_response_processing(user_query=user_query, 
                                           gpt=gpt, 
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
@@ -562,13 +568,16 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
          # Log the response to database
         if socket_manager is not None:
             await socket_manager.send_json({"response" : f"Adding the conversation to memory", "type": "thinking"}, websocket)
-        await saveAssistantResponse(main_response, gpt, conversations)
+            
+        
+        await saveAssistantResponse(main_response, gpt, conversations, pdf_id)
         
     return {
         "model_response" : main_response,
         "total_tokens": total_tokens,
         "follow_up_questions": follow_up_questions,
-        "reasoning" : reasoning
+        "reasoning" : reasoning,
+        "pdf_id": pdf_id
     }
 
 async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict, role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
@@ -1487,7 +1496,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                     logger.info("write_response_to_pdf called")
                     function_args = json.loads(tool_call.function.arguments)
                     logger.info(f"[PDF INTENT] PDF tool called with args: {function_args}")
-                    await write_response_to_pdf(
+                    data = await write_response_to_pdf(
                         pdf_content=function_args.get("response_text", ""),
                         gpt=gpt,
                         file_name=function_args.get("file_name", "nia_response"),
@@ -1570,26 +1579,27 @@ async def construct_model_configuration(model_configuration) -> ModelConfigurati
     model_configuration: ModelConfiguration = model_configuration if  isinstance(model_configuration, ModelConfiguration) else ModelConfiguration(**model_configuration)
     return model_configuration
 
-async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list):
+async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list,pdf_id: str = None):
     # Log the response to database
-        await update_message({
-            "gpt_id": gpt["_id"], # Make sure gpt is accessible here
-            "gpt_name": gpt["name"], # Make sure gpt is accessible here
-            "role": "assistant",
-            "content": response,
-            "user": gpt["user"],
-            "use_case_id": gpt["use_case_id"],
-        })
+    message_data = {
+        "gpt_id": gpt["_id"],
+        "gpt_name": gpt["name"],
+        "role": "assistant",
+        "content": response,
+        "user": gpt["user"],
+        "use_case_id": gpt["use_case_id"],
+    }
+    if pdf_id:
+        message_data["pdf_id"] = pdf_id
 
-        conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
+    await update_message(message_data)
+    conversations.append({"role": "assistant", "content": response}) # Append the response to the conversation history
 
-PDF_CONTENT_STORE = {}
 
 # --- Helper to serialize and write structured response to PDF ---
 async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str = "nia_response", socket_manager: ConnectionManager = None, websocket: WebSocket = None):
-    """
-    Try to parse as StructuredSpendingAnalysis and pretty print if possible, else fallback to string.
-    """
+   
+    pdf_id = None
     logger.info("Generating PDF for use case 1")
 
     try:
@@ -1628,13 +1638,9 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
             text += f"{parsed.closure}\n"
             pdf_content = text
 
-        # Write the content to PDF file
-       # await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
-
-        PDF_CONTENT_STORE[file_name] = pdf_content   #store the pdf content
-        download_link = f"/download-pdf/{file_name}"
-        logger.info(f"%%%%%%%%%%%%%%%%%%%%%%  PDF download link generated: {download_link}")
-        return download_link
+        gpt_user = gpt["user"]
+        pdf_id = await save_pdf_content(gpt_id=gpt["_id"], user=gpt_user, pdf_file_name=file_name, pdf_content=pdf_content)
+        logger.info(f"[PDF INTENT] PDF generated successfully with ID: {pdf_id}")
 
     except Exception as ser_ex:
         logger.error(f"[PDF INTENT] Error serializing structured response: {ser_ex}")
@@ -1651,6 +1657,8 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
             logger.info(f"[PDF INTENT] Fallback: Wrote content to text file at {text_file_path}")
         except Exception as text_ex:
             logger.error(f"[PDF INTENT] Error writing fallback text file: {text_ex}")
+
+    return pdf_id
 
 async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf") -> str:
     pdf: FPDF = FPDF()
@@ -1739,6 +1747,7 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     return response, model_response
 
 async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+    pdf_id = None
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
     pdf_intent_conversation = [
         {"role": "user", "content": user_query}, 
@@ -1746,7 +1755,7 @@ async def do_post_response_processing(user_query: str, gpt: GPTData, model_confi
     ]
     logger.info(f"[PDF INTENT] Calling OpenAI with tools")
     
-    await determineFunctionCalling(search_query=user_query, 
+    pdf_id, _, _, _ = await determineFunctionCalling(search_query=user_query, 
                                    image_response="No Data", 
                                    use_case=use_case, 
                                    gpt=gpt, 
@@ -1756,6 +1765,8 @@ async def do_post_response_processing(user_query: str, gpt: GPTData, model_confi
                                    use_case_config=use_case_config,
                                    socket_manager=socket_manager, 
                                    websocket=websocket)
+    
+    return pdf_id
 
 
 def base64_to_image(base64_string: str, save_path=None, filename=None):
