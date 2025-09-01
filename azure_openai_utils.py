@@ -48,7 +48,6 @@ from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
 from mongo_service import save_pdf_content
-PDF_CONTENT_STORE = {}
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 

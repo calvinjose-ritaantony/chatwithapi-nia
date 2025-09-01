@@ -26,10 +26,8 @@ from mongo_service import fetch_chat_history_for_use_case, get_gpt_by_id, create
 from prompt_utils import PromptValidator
 from app_config import socket_manager
 
-
-from azure_openai_utils import generate_pdf_from_text, PDF_CONTENT_STORE
+from azure_openai_utils import generate_pdf_from_text
 from mongo_service import get_collection
-
 
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -826,7 +824,7 @@ async def getUserName(request:Request, callee: str):
     return "Dharmeshwaran S"
 
 #fetch it back from mongo
-@router.get("/download-pdf/{pdf_id}")
+@router.get("/export/pdf/{pdf_id}")
 async def download_pdf_by_id(pdf_id: str):
     pdfs_collection = await get_collection("pdfs")
     pdf_doc = await pdfs_collection.find_one({"_id": ObjectId(pdf_id)})
