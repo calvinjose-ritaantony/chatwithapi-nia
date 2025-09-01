@@ -37,6 +37,8 @@ async def get_collection(collection_name:str):
         mongo_collection = db["orders"]
     elif collection_name == "prompts":
         mongo_collection = db["prompts"]
+    elif collection_name == "pdfs":  
+        mongo_collection = db["pdfs"]
     
     return mongo_collection
 
@@ -650,3 +652,20 @@ async def get_gpt_by_id(gpt_id):
     gpts_collection = await get_collection("gpts")
     gpt: GPTData = await gpts_collection.find_one({"_id": ObjectId(gpt_id)})
     return gpt
+
+#### functions for storing the PDF content ####
+
+async def save_pdf_content(gpt_id: str, user: str, pdf_file_name: str, pdf_content: str):
+    
+    pdfs_collection = await get_collection("pdfs")
+    document = {
+        "gpt_id": ObjectId(gpt_id),
+        "user": user,
+        "pdf_file_name": pdf_file_name,
+        "pdf_content": pdf_content,
+        "created_at": date.datetime.now().isoformat()
+    }
+    result = await pdfs_collection.insert_one(document)
+    logger.info(f"Saved PDF content for user {user}, file {pdf_file_name}, id {result.inserted_id}")
+    return str(result.inserted_id)
+
