@@ -35,6 +35,35 @@ async def azure_ai_search_tool(gpt_id: str, use_case: str) -> NiaTool:
         }
     )
 
+async def get_data_from_gentell_search(gpt_id: str, use_case: str) -> NiaTool:
+    return NiaTool(
+        tool_name="get_data_from_gentell_search", 
+        tool_description="Function that allows NIA to get data from Azure AI Search related to Gentell wound care products and clinical guidance",
+        type="pre_response",
+        tool_definition={
+            "type": "function",
+            "function": {
+                "name": "get_data_from_gentell_search",
+                "description": "Fetch the Gentell wound care related documents from Azure AI Search for the given user query. This includes wound care products, indications, contraindications, and educational/clinical resources.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "search_query": {
+                            "type": "string",
+                            "description": "The user query related to wound care, e.g. suitable dressings for a stage 2 pressure ulcer, best Gentell products for heavily exudating wounds, wound care education for caregivers.",
+                        },
+                        "use_case": {
+                            "type": "string", 
+                            "enum": await get_usecases_list(gpt_id),
+                            "description": f"The actual use case of the user query, e.g. {use_case}"
+                            }
+                    },
+                    "required": ["search_query", "use_case"],
+                },
+            }
+        }
+    )
+
 async def web_search_tool() -> NiaTool:
     return NiaTool(
         tool_name="get_data_from_web_search", 
