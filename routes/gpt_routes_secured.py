@@ -217,7 +217,7 @@ async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str, access_token
                 
                 logger.info(f"Chat request received with GPT ID: {gpt_name} \n user message: {user_message} \n params: {params}")
                 gpt = await get_gpt_by_id(gpt_id)
-                await socket_manager.send_json({"response": f"Chat request received with GPT ID: {gpt_name} <br> user message: {user_message}", "type": "thinking"}, websocket)
+                await socket_manager.send_json({"response": f"Chat request received with GPT ID: {gpt_name} user message: {user_message}", "type": "thinking"}, websocket)
 
                 model_configuration = ModelConfiguration(**params)
                 logger.info(f"Received GPT data: {gpt} \n Model Configuration: {model_configuration}")

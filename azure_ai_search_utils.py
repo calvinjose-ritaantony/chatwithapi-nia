@@ -36,7 +36,11 @@ from azure.search.documents.indexes.models import (
     SearchIndexerIndexProjectionsParameters,
     IndexProjectionMode,
     SearchIndexerSkillset,
-    LexicalAnalyzerName
+    IndexingParameters,
+    IndexingParametersConfiguration,
+    LexicalAnalyzerName,
+    FieldMapping,
+    FieldMappingFunction
 )
 from app_config import RAG_DOCUMENTS_FOLDER
 
@@ -48,9 +52,10 @@ logger = logging.getLogger(__name__)
 # Azure Configuration
 BLOB_CONNECTION_STRING = os.getenv("BLOB_STORAGE_CONNECTION_STRING")
 BLOB_CONTAINER_NAME = os.getenv("BLOB_STORAGE_RAG_CONTAINER_NAME")
+BLOB_JSON_CONTAINER_NAME = os.getenv("BLOB_STORAGE_RAG_JSON_CONTAINER_NAME")
 SEARCH_SERVICE_ENDPOINT = os.getenv("SEARCH_ENDPOINT_URL")
 SEARCH_API_KEY = os.getenv("SEARCH_KEY")
-SEARCH_INDEX_NAME = "rag-vector" #os.getenv("SEARCH_INDEX_NAME")
+SEARCH_INDEX_NAME = "rag-vector-healthcare" #os.getenv("SEARCH_INDEX_NAME")
 
 api_version="2024-03-01-preview"
 headers={
@@ -100,13 +105,13 @@ search_client = SearchClient(endpoint=SEARCH_SERVICE_ENDPOINT, index_name=index_
 async def upload_file_to_blob(folder_path):
     """Ensures the container exists and uploads all files in a folder to Azure Blob Storage."""
     try:
-        container_client: ContainerClient = blob_service_client.get_container_client(BLOB_CONTAINER_NAME)
+        container_client: ContainerClient = blob_service_client.get_container_client(BLOB_JSON_CONTAINER_NAME)
 
         # Ensure the container exists
         if not container_client.exists():
-            logger.info(f"Container '{BLOB_CONTAINER_NAME}' does not exist. Creating it now...")
+            logger.info(f"Container '{BLOB_JSON_CONTAINER_NAME}' does not exist. Creating it now...")
             container_client.create_container()
-            logger.info(f"Container '{BLOB_CONTAINER_NAME}' created.")
+            logger.info(f"Container '{BLOB_JSON_CONTAINER_NAME}' created.")
 
         # Loop through all files in the folder
         logger.info(f"Uploading files from '{folder_path}' to Blob Storage...")
@@ -145,7 +150,7 @@ async def create_data_source():
         name=datasource_name,
         type="azureblob",
         connection_string=BLOB_CONNECTION_STRING,
-        container={"name": BLOB_CONTAINER_NAME} #, "include": "*.pdf"
+        container={"name": BLOB_JSON_CONTAINER_NAME} #, "include": "*.pdf"
     )
 
     try:
@@ -238,6 +243,148 @@ async def create_search_index():
         return False
 
 #endregion
+
+async def create_search_index_json():
+    fields = [
+        SearchField(name="pageNumber", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="handwrittenContent", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="content", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="headings", type=SearchFieldDataType.Collection(SearchFieldDataType.String), searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="subheadings", type=SearchFieldDataType.Collection(SearchFieldDataType.String), searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="footers", type=SearchFieldDataType.Collection(SearchFieldDataType.String), searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+
+        # Nested 'tables' complex collection
+        SearchField(
+            name="tables",
+            type=SearchFieldDataType.Collection(SearchFieldDataType.ComplexType),
+            fields=[
+                SearchField(name="caption", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                SearchField(name="rowCount", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                SearchField(name="columnCount", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                SearchField(
+                    name="cells",
+                    type=SearchFieldDataType.Collection(SearchFieldDataType.ComplexType),
+                    fields=[
+                        SearchField(name="rowIndex", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                        SearchField(name="columnIndex", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                        SearchField(name="content", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                        SearchField(name="kind", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+                    ]
+                )
+            ]
+        ),
+
+        SearchField(
+            name="figures",
+            type=SearchFieldDataType.Collection(SearchFieldDataType.ComplexType),
+            fields=[
+                SearchField(
+                    name="caption",
+                    type=SearchFieldDataType.String,
+                    searchable=True, filterable=True, retrievable=True,
+                    sortable=False, facetable=False, key=False,
+                    analyzer_name="standard.lucene"
+                ),
+                SearchField(
+                    name="caption_paragraphs",
+                    type=SearchFieldDataType.Collection(SearchFieldDataType.String),
+                    searchable=True, filterable=True, retrievable=True,
+                    sortable=False, facetable=False, key=False,
+                    analyzer_name="standard.lucene"
+                ),
+                SearchField(
+                    name="elements",
+                    type=SearchFieldDataType.Collection(SearchFieldDataType.String),
+                    searchable=True, filterable=True, retrievable=True,
+                    sortable=False, facetable=False, key=False,
+                    analyzer_name="standard.lucene"
+                ),
+                SearchField(
+                    name="description",
+                    type=SearchFieldDataType.String,
+                    searchable=True, filterable=True, retrievable=True,
+                    sortable=False, facetable=False, key=False,
+                    analyzer_name="standard.lucene"
+                ),
+                SearchField(
+                    name="image_file",
+                    type=SearchFieldDataType.String,
+                    searchable=True, filterable=True, retrievable=True,
+                    sortable=False, facetable=False, key=False,
+                    analyzer_name="standard.lucene"
+                ),
+                SearchField(
+                    name="method",
+                    type=SearchFieldDataType.String,
+                    searchable=True, filterable=True, retrievable=True,
+                    sortable=False, facetable=False, key=False,
+                    analyzer_name="standard.lucene"
+                )
+            ]
+        ),
+
+        # SearchField(name="figures", type=SearchFieldDataType.Collection(SearchFieldDataType.String), searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+
+        SearchField(name="AzureSearch_DocumentKey", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=True, analyzer_name="standard.lucene"),
+        SearchField(name="metadata_storage_content_type", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="metadata_storage_size", type=SearchFieldDataType.Int64, searchable=False, filterable=True, retrievable=True, sortable=False, facetable=False, key=False),
+        SearchField(name="metadata_storage_last_modified", type=SearchFieldDataType.DateTimeOffset, searchable=False, filterable=True, retrievable=True, sortable=False, facetable=False, key=False),
+        SearchField(name="metadata_storage_content_md5", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="metadata_storage_name", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="metadata_storage_path", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(name="metadata_storage_file_extension", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+    ]
+    vector_search = VectorSearch(  
+        algorithms=[  
+            HnswAlgorithmConfiguration(name=hnswAlgConfigName),
+        ],  
+        profiles=[  
+            VectorSearchProfile(  
+                name=hnswProfile,  
+                algorithm_configuration_name=hnswAlgConfigName,  
+                vectorizer_name=vectorizerName
+            )
+        ],  
+        vectorizers=[  
+            AzureOpenAIVectorizer(  
+                vectorizer_name=vectorizerName,  
+                kind="azureOpenAI",  
+                parameters=AzureOpenAIVectorizerParameters(  
+                    resource_url=AZURE_OPENAI_ENDPOINT,  
+                    deployment_name=AZURE_OPENAI_EMBEDDING_DEPLOYMENT,
+                    model_name=AZURE_OPENAI_MODEL_NAME,
+                    api_key=AZURE_OPENAI_KEY,
+                ),
+            ),  
+        ]         
+    )  
+  
+    semantic_config = SemanticConfiguration(  
+        name=semanticConfig,  
+        prioritized_fields=SemanticPrioritizedFields(  
+            content_fields=[SemanticField(field_name="content"), SemanticField(field_name="headings"), SemanticField(field_name="subheadings"), SemanticField(field_name="footers")],
+            keywords_fields=[SemanticField(field_name="content"), SemanticField(field_name="headings"), SemanticField(field_name="subheadings"), SemanticField(field_name="footers")],
+        )
+    )
+    
+    # Create the semantic search with the configuration  
+    semantic_search = SemanticSearch(configurations=[semantic_config])    
+
+    index = SearchIndex(
+        name=index_name,
+        fields=fields,     
+        semantic_search=semantic_search,
+        vector_search=vector_search 
+        )
+
+    try:
+        result = await search_index_client.create_or_update_index(index)
+        logger.info(f"{result.name} created") 
+        return result.name, semantic_config.name
+    except HttpResponseError as e:
+        logger.info(f" Failed- {index_name} to create index: {e}")
+        return False
+
 
 # region : Skillset 
 
@@ -355,6 +502,79 @@ async def create_indexer():
 
 #endregion 
 
+
+
+async def create_indexer_json():
+
+    field_mappings = [
+        FieldMapping(
+            source_field_name="AzureSearch_DocumentKey",
+            target_field_name="AzureSearch_DocumentKey",
+            mapping_function=FieldMappingFunction(
+                name="base64Encode",
+                parameters={"useHttpServerUtilityUrlTokenEncode": False}
+            )
+        )
+    ]
+
+    indexer = SearchIndexer(
+        name=indexer_name,
+        description="",
+        data_source_name=datasource_name,
+        skillset_name=None,
+        target_index_name=index_name,
+        disabled=None,
+        schedule=None,
+        parameters={"configuration": {"parsingMode": "jsonArray", "dataToExtract": "contentAndMetadata"}},
+        # parameters=indexer_parameters,
+        field_mappings=field_mappings,
+        output_field_mappings=[],
+        encryption_key=None
+    )
+
+    try:
+        await indexer_client.create_or_update_indexer(indexer)
+        logger.info(f" Successfully created Indexer '{indexer_name}'.")
+        # Run the indexer  
+        await indexer_client.run_indexer(indexer_name)  
+        logger.info(f' {indexer_name} is created and running. If queries return no results, please wait a bit and try again.')  
+
+    except HttpResponseError as e:
+        logger.info(f" Failed to create Indexer: {e}")
+    # indexer_parameters = IndexingParameters(
+    #     configuration=IndexingParametersConfiguration(),
+    #     max_failed_items=0,
+    #     max_failed_items_per_batch=0
+    # )
+    # indexer_parameters.configuration.parsing_mode = "jsonArray"
+    # indexer_parameters.configuration.data_to_extract = "contentAndMetadata"
+
+    # indexer = SearchIndexer(
+    #     name=indexer_name,
+    #     description="Indexer to index documents and generate embeddings",
+    #     data_source_name=datasource_name,
+    #     # skillset_name="rag-vector-skillset-dev-001",
+    #     target_index_name=index_name,
+    #     disabled=False,
+    #     parameters=indexer_parameters,
+    #     field_mappings=[],  
+    #     output_field_mappings=[],
+    #     schedule=None
+    # )
+    
+    # try:
+    #     await indexer_client.create_or_update_indexer(indexer)
+    #     logger.info(f" Successfully created Indexer '{indexer_name}'.")
+    #     await indexer_client.run_indexer(indexer_name)  
+    #     logger.info(f' {indexer_name} is created and running. If queries return no results, please wait a bit and try again.')  
+
+    # except HttpResponseError as e:
+    #     logger.info(f" Failed to create Indexer: {e}")
+
+
+
+
+
 # region : Semantic / Vector Search Query
 
 #  Run a Semantic Search Query
@@ -398,19 +618,19 @@ async def store_to_azure_ai_search(collection_name: str, use_semantic_chunking: 
     """Main function to execute the workflow."""
     # base_path = "C:/Users/KEO1COB/OneDrive - Bosch Group/Documents/Office/PycharmProjects/NextGenCX/chatwithapi/"
     # Process PDF files
-    pdf_folder_path = Path(os.path.join(RAG_DOCUMENTS_FOLDER, "RAG_" + collection_name))
+    # pdf_folder_path = Path(os.path.join(RAG_DOCUMENTS_FOLDER, "RAG_" + collection_name))
     # pdf_folder_path = Path(base_path) / pdf_folder
+    pdf_folder_path = Path(os.path.join(RAG_DOCUMENTS_FOLDER, "RAG_" + collection_name))
+    json_folder_path = Path(os.path.join(pdf_folder_path, "json"))
+    if not json_folder_path.exists():
+        json_folder_path.mkdir(parents=True, exist_ok=True)
 
-    # if the folder doesn't exist create it
-    if not pdf_folder_path.exists():
-        pdf_folder_path.mkdir(parents=True, exist_ok=True)
-
-    blob_url = await upload_file_to_blob(pdf_folder_path)
+    blob_url = await upload_file_to_blob(json_folder_path)
     logger.info(f"Blob URL: {blob_url}")
     await create_data_source()    
-    index_name, semantic_configuration_name = await create_search_index()
-    await create_skillset()
-    await create_indexer()
+    index_name, semantic_configuration_name = await create_search_index_json()
+    # await create_skillset()
+    await create_indexer_json()
 
     return index_name, semantic_configuration_name
     

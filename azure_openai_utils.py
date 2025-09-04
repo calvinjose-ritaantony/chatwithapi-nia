@@ -217,7 +217,7 @@ async def handle_api_connection_exception_standard(gpt: GPTData, model_configura
             await socket_manager.send_json({"response" : f"Encountered APIConnectionError : Retrying with next endpoint. <br> {client._azure_endpoint} ", "type": "thinking"}, websocket)
         
         try:
-            response: ChatCompletion = await client.chat.completions.create(
+            response: ChatCompletion = await client.chat.completions.parse(
                 model=gpt["name"],
                 messages=conversations,
                 max_tokens=model_configuration.max_tokens,
@@ -228,8 +228,9 @@ async def handle_api_connection_exception_standard(gpt: GPTData, model_configura
                 extra_body=extra_body,
                 seed=100,
                 stop=None,
-                stream=False,
-                user=gpt["user"]
+                #stream=False,
+                user=gpt["user"],
+                response_format=StructuredSpendingAnalysis
             )
             model_response = response.choices[0].message.content
             logger.info(f"Retry Model Response is {response}")
@@ -300,7 +301,7 @@ async def handle_ratelimit_exception_standard(gpt: GPTData, model_configuration:
 
         # Helper to call the model
         async def call_model(client: AsyncAzureOpenAI, model_name, conversations, model_configuration: ModelConfiguration):
-            response: ChatCompletion = await client.chat.completions.create(
+            response: ChatCompletion = await client.chat.completions.parse(
             model=model_name,
             messages=conversations,
             max_tokens=model_configuration.max_tokens,
@@ -311,8 +312,10 @@ async def handle_ratelimit_exception_standard(gpt: GPTData, model_configuration:
             extra_body=extra_body,
             seed=100,
             stop=None,
-            stream=False,
-            user=gpt["user"]
+            # stream=False,
+            user=gpt["user"],
+            response_format=StructuredSpendingAnalysis
+
             )
            
             model_response = response.choices[0].message.content
@@ -471,7 +474,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
         extra_body = {}
         
-        response: ChatCompletion = await client.chat.completions.create(
+        response: ChatCompletion = await client.chat.completions.parse(
             model=gpt["name"],
             messages=conversations,
             max_tokens=model_configuration.max_tokens, #max_tokens is now deprecated with o1 models
@@ -482,8 +485,10 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
             extra_body=extra_body,
             seed=100,
             stop=None,
-            stream=False,
-            user=gpt["user"]
+            # stream=False,
+            user=gpt["user"],
+            response_format=StructuredSpendingAnalysis
+
             #n=2,
             #reasoning_effort="low", # available for o1,o3 models only
             #timeout=30,
@@ -1665,7 +1670,7 @@ async def get_last_user_message(conversations: list):
     return last_user_message
 
 async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[dict], model_configuration:              ModelConfiguration, extra_body: dict = None):
-    response: ChatCompletion = await client.chat.completions.create(
+    response: ChatCompletion = await client.chat.completions.parse(
                 model=gpt["name"],
                 messages=conversations,
                 max_tokens=model_configuration.max_tokens, #max_tokens is now deprecated with o1 models
@@ -1676,8 +1681,10 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
                 extra_body=extra_body,
                 seed=100,
                 stop=None,
-                stream=False,
-                user=gpt["user"]
+                #stream=False,
+                user=gpt["user"],
+                response_format=StructuredSpendingAnalysis
+
                 #n=2,
                 #reasoning_effort="low", # available for o1,o3 models only
                 #timeout=30,
