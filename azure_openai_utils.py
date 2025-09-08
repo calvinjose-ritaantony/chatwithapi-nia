@@ -1495,13 +1495,14 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                     logger.info("write_response_to_pdf called")
                     function_args = json.loads(tool_call.function.arguments)
                     logger.info(f"[PDF INTENT] PDF tool called with args: {function_args}")
-                    data = await write_response_to_pdf(
+                    pdf_id = await write_response_to_pdf(
                         pdf_content=function_args.get("response_text", ""),
                         gpt=gpt,
                         file_name=function_args.get("file_name", "nia_response"),
                         socket_manager=socket_manager,
                         websocket=websocket  # Default file name if not provided
                     )
+                    data.append(pdf_id)
                 elif tool_call.function.name == "get_data_from_web_search":
                     logger.info("Calling get_data_from_web_search")
                     function_args = json.loads(tool_call.function.arguments)
