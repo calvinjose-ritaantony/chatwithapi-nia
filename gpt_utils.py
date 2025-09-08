@@ -41,7 +41,7 @@ def create_app_directories():
     os.makedirs(STATIC_SCRIPTS_FOLDER, exist_ok=True)
     os.makedirs(STATIC_CSS_FOLDER, exist_ok=True)
 
-async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile]):
+async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile],isDocIntelligence: bool= False):
     # Additional validation (you can add more checks here, like file type validation)
     # ALLOWED_DOCUMENT_EXTENSIONS = ('.json', '.jsonl', '.pdf', '.csv', '.txt')
     # ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg')
@@ -135,23 +135,33 @@ async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile]
     # Create collection in Weaviate for the uploaded PDF
     if gpt.use_rag and file_extension == ".pdf":
         if gpt.name in ["gpt-4o"]:
-            try:
-                json_folder = os.path.join(folder_path, "json")
-                os.makedirs(json_folder, exist_ok=True)
-                output_json_path = os.path.join(
-                json_folder,
-                f"{file_name}_structured.json"
-                )
-                analyze_pdf_with_docintel(file_path, output_path=output_json_path)
-                logger.info(f"PDF analysis results saved to {output_json_path}")
+            if isDocIntelligence:
 
-            except Exception as e:
-                    logger.error(f"PDF analysis failed: {e}")
-                    raise HTTPException(status_code=500, detail=f"PDF analysis failed: {e}")
-                # Store the uploaded PDF into Azure AI Search Index 
-            logger.info(f"Storing into Azure AI Search Index - Started")
-            index_name, semantic_configuration_name = await store_to_azure_ai_search(gpt_id, True)
-            logger.info(f"Storing into Azure AI Search Index - Completed")
+                try:
+                    json_folder = os.path.join(folder_path, "json")
+                    os.makedirs(json_folder, exist_ok=True)
+                    output_json_path = os.path.join(
+                    json_folder,
+                    f"{file_name}_structured.json"
+                    )
+                    analyze_pdf_with_docintel(file_path, output_path=output_json_path)
+                    logger.info(f"PDF analysis results saved to {output_json_path}")
+
+                except Exception as e:
+                        logger.error(f"PDF analysis failed: {e}")
+                        raise HTTPException(status_code=500, detail=f"PDF analysis failed: {e}")
+                    # Store the uploaded PDF into Azure AI Search Index 
+                logger.info(f"Storing into Azure AI Search Index - Started")
+                index_name, semantic_configuration_name, field_to_select = await store_to_azure_ai_search(gpt_id, True, isDocIntelligence)
+                logger.info(f"Storing into Azure AI Search Index - Completed")
+            else:
+                logger.info("Storing PDF into Azure AI Search Index - Started")
+                index_name, semantic_configuration_name, field_to_select = await store_to_azure_ai_search(
+                gpt_id, True, isDocIntelligence)
+                logger.info("Storing PDF into Azure AI Search Index - Completed")
+
+
+
         # else:
         #     # Store the uploaded PDF into vector database
         #     logger.info(f"Storing into vector database - Started")
@@ -159,7 +169,7 @@ async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile]
         #     logger.info(f"Storing into vector database - Completed")
 
         # create a use_case Document_Search in DB for the gpt_id
-        await create_usecase_for_document_search(gpt_id, file_name, index_name, semantic_configuration_name) # if multiple documents are uploaded the last file name will be used    
+        await create_usecase_for_document_search(gpt_id, file_name, index_name, semantic_configuration_name,field_to_select) # if multiple documents are uploaded the last file name will be used    
 
     return file_upload_status
 

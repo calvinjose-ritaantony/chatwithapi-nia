@@ -331,8 +331,8 @@ async def update_instruction(request: Request, gpt_id: str, gpt_name: str, useca
 
     return response
 
-@router.put("/upload_document/{gpt_id}/{gpt_name}")
-async def upload_document_index(request: Request, gpt_id: str, gpt_name: str, user: Annotated[dict, Depends(azure_scheme)], files: list[UploadFile] = File(...)):
+@router.put("/upload_document/{gpt_id}/{gpt_name}/{isDocIntelligence}")
+async def upload_document_index(request: Request, gpt_id: str, gpt_name: str, isDocIntelligence: bool, user: Annotated[dict, Depends(azure_scheme)], files: list[UploadFile] = File(...)):
     logger.info(f"Updating GPT with ID: {gpt_id} Name: {gpt_name}")
     gpts_collection = await get_collection("gpts")
     gpt: GPTData = await gpts_collection.find_one({"_id": ObjectId(gpt_id)})
@@ -365,7 +365,7 @@ async def upload_document_index(request: Request, gpt_id: str, gpt_name: str, us
             file_upload_status = ""
 
             if gpt.use_rag:
-                file_upload_status = await handle_upload_files(gpt_id, gpt, files)
+                file_upload_status = await handle_upload_files(gpt_id, gpt, files,isDocIntelligence)
                 logger.info(f"RAG Files uploaded successfully: {file_upload_status}")
                 response = JSONResponse({"message": "Document Uploaded Successfully!", "gpt_name": gpt_name, "file_upload_status" : file_upload_status}, status_code=200)
                 

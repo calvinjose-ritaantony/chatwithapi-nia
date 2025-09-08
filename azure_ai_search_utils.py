@@ -2,6 +2,7 @@ from datetime import time
 import os
 import logging
 from pathlib import Path
+from typing import List
 from dotenv import load_dotenv
 from azure.core.exceptions import HttpResponseError
 from azure.storage.blob.aio import BlobServiceClient, BlobClient, ContainerClient
@@ -55,8 +56,8 @@ BLOB_CONTAINER_NAME = os.getenv("BLOB_STORAGE_RAG_CONTAINER_NAME")
 BLOB_JSON_CONTAINER_NAME = os.getenv("BLOB_STORAGE_RAG_JSON_CONTAINER_NAME")
 SEARCH_SERVICE_ENDPOINT = os.getenv("SEARCH_ENDPOINT_URL")
 SEARCH_API_KEY = os.getenv("SEARCH_KEY")
-SEARCH_INDEX_NAME = "rag-vector-healthcare" #os.getenv("SEARCH_INDEX_NAME")
-
+SEARCH_INDEX_NAME_pdf = os.getenv("SEARCH_INDEX_NAME")
+SEARCH_INDEX_NAME_Json =os.getenv("SEARCH_INDEX_NAME_Json")
 api_version="2024-03-01-preview"
 headers={
     "Content-Type": "application/json", 
@@ -68,16 +69,17 @@ AZURE_OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT = "text-embedding-3-large" #os.getenv("EMBEDDING_MODEL_NAME", "text-embedding-3-large")
 AZURE_OPENAI_MODEL_NAME = "text-embedding-3-large" #os.getenv("EMBEDDING_MODEL_NAME", "gpt-4o")
 AZURE_OPENAI_MODEL_DIMENSIONS = int(os.getenv("AZURE_OPENAI_EMBEDDING_DIMENSIONS", 1536))
-
 env_instance = os.getenv("ENV_INSTANCE", "dev-001")
-index_name = f"{SEARCH_INDEX_NAME}-{env_instance}"
+
+
+# index_name = f"{SEARCH_INDEX_NAME}-{env_instance}"
 
 # Initialize Clients
 # blob_service_client = BlobServiceClient.from_connection_string(BLOB_CONNECTION_STRING)
 # blob_service_client = blob_service_client
 search_index_client = SearchIndexClient(endpoint=SEARCH_SERVICE_ENDPOINT, credential=AzureKeyCredential(SEARCH_API_KEY))
 indexer_client = SearchIndexerClient(endpoint=SEARCH_SERVICE_ENDPOINT, credential=AzureKeyCredential(SEARCH_API_KEY))
-search_client = SearchClient(endpoint=SEARCH_SERVICE_ENDPOINT, index_name=index_name, credential=AzureKeyCredential(SEARCH_API_KEY))
+# search_client = SearchClient(endpoint=SEARCH_SERVICE_ENDPOINT, index_name=index_name, credential=AzureKeyCredential(SEARCH_API_KEY))
 
 # region : Upload PDF File 
 
@@ -102,16 +104,16 @@ search_client = SearchClient(endpoint=SEARCH_SERVICE_ENDPOINT, index_name=index_
 #         logger.info(f"Error uploading file to blob: {e}", exc_info=True)
 #         return None
     
-async def upload_file_to_blob(folder_path):
+async def upload_file_to_blob(folder_path,container_name):
     """Ensures the container exists and uploads all files in a folder to Azure Blob Storage."""
     try:
-        container_client: ContainerClient = blob_service_client.get_container_client(BLOB_JSON_CONTAINER_NAME)
+        container_client: ContainerClient = blob_service_client.get_container_client(container_name)
 
         # Ensure the container exists
         if not container_client.exists():
-            logger.info(f"Container '{BLOB_JSON_CONTAINER_NAME}' does not exist. Creating it now...")
+            logger.info(f"Container '{container_name}' does not exist. Creating it now...")
             container_client.create_container()
-            logger.info(f"Container '{BLOB_JSON_CONTAINER_NAME}' created.")
+            logger.info(f"Container '{container_name}' created.")
 
         # Loop through all files in the folder
         logger.info(f"Uploading files from '{folder_path}' to Blob Storage...")
@@ -142,15 +144,15 @@ async def upload_file_to_blob(folder_path):
 # region : Data Source
 
 #  Data sources name
-datasource_name = f"{SEARCH_INDEX_NAME}-blob-{env_instance}"
+# datasource_name = f"{SEARCH_INDEX_NAME}-blob-{env_instance}"
 
 #  Create Data Source
-async def create_data_source():     
+async def create_data_source(container_name,datasource_name):     
     data_source = SearchIndexerDataSourceConnection(
         name=datasource_name,
         type="azureblob",
         connection_string=BLOB_CONNECTION_STRING,
-        container={"name": BLOB_JSON_CONTAINER_NAME} #, "include": "*.pdf"
+        container={"name": container_name} #, "include": "*.pdf"
     )
 
     try:
@@ -164,13 +166,13 @@ async def create_data_source():
 # region : Search Index
 
 # Vector Search Profile | Hnsw Algorthim | Vetorizer | Semantic Config Name
-hnswProfile = f"{SEARCH_INDEX_NAME}-hnswProfile-{env_instance}"
-hnswAlgConfigName = f"{SEARCH_INDEX_NAME}-hnsw-config-{env_instance}"
-vectorizerName = f"{SEARCH_INDEX_NAME}-vectorizer-{env_instance}"
-semanticConfig = f"{SEARCH_INDEX_NAME}-semantic-config-{env_instance}"
+# hnswProfile = f"{SEARCH_INDEX_NAME}-hnswProfile-{env_instance}"
+# hnswAlgConfigName = f"{SEARCH_INDEX_NAME}-hnsw-config-{env_instance}"
+# vectorizerName = f"{SEARCH_INDEX_NAME}-vectorizer-{env_instance}"
+# semanticConfig = f"{SEARCH_INDEX_NAME}-semantic-config-{env_instance}"
 
 # Function to create the search index
-async def create_search_index():
+async def create_search_index(index_name,hnswProfile, hnswAlgConfigName, vectorizerName, semanticConfig):
     # async define Search Fields 
     fields = [
     SearchField(name="chunk_id", type=SearchFieldDataType.String, key=True, sortable=True, analyzer_name="keyword"),  #LexicalAnalyzerName.STANDARD_LUCENE
@@ -240,11 +242,12 @@ async def create_search_index():
         return result.name, semantic_config.name
     except HttpResponseError as e:
         logger.info(f" Failed- {index_name} to create index: {e}")
-        return False
+        return None, None
+
 
 #endregion
 
-async def create_search_index_json():
+async def create_search_index_json(index_name,hnswProfile, hnswAlgConfigName, vectorizerName, semanticConfig):
     fields = [
         SearchField(name="pageNumber", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
         SearchField(name="handwrittenContent", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
@@ -383,16 +386,16 @@ async def create_search_index_json():
         return result.name, semantic_config.name
     except HttpResponseError as e:
         logger.info(f" Failed- {index_name} to create index: {e}")
-        return False
+        return None, None
 
 
 # region : Skillset 
 
 # Skillset name 
-skillset_name = f"{SEARCH_INDEX_NAME}-skillset-{env_instance}"
+# skillset_name = f"{SEARCH_INDEX_NAME}-skillset-{env_instance}"
 
 # Create a skillset 
-async def create_skillset(): 
+async def create_skillset(index_name, skillset_name): 
 
     split_skill = SplitSkill(  
         description="Split skill to chunk documents",  
@@ -460,10 +463,10 @@ async def create_skillset():
 # region : Indexer
 
 # Indexer Name
-indexer_name = f"{SEARCH_INDEX_NAME}-indexer-{env_instance}" 
+# indexer_name = f"{SEARCH_INDEX_NAME}-indexer-{env_instance}" 
 
 #   Create Indexer
-async def create_indexer():
+async def create_indexer(indexer_name,skillset_name,datasource_name,index_name):
 
     indexer_parameters = None
     
@@ -471,8 +474,9 @@ async def create_indexer():
         name=indexer_name,  
         description="Indexer to index documents and generate embeddings",  
         skillset_name=skillset_name,  
-        target_index_name=index_name,  
         data_source_name=datasource_name,
+        target_index_name=index_name,  
+        # data_source_name=datasource_name,
         parameters=indexer_parameters
     )  
 
@@ -504,7 +508,7 @@ async def create_indexer():
 
 
 
-async def create_indexer_json():
+async def create_indexer_json(indexer_name, datasource_name,index_name):
 
     field_mappings = [
         FieldMapping(
@@ -590,49 +594,81 @@ async def run_semantic_search(query):
     # top=1
     # )  
   
-    # for result in results:  
+    # for result in results:  isDocIntelligence
     #     logger.info(f"parent_id: {result['parent_id']}")  
     #     logger.info(f"chunk_id: {result['chunk_id']}")    
     #     logger.info(f"Content: {result['chunk']}") 
 
-async def perform_search(query, search_type="keyword"):
-    """ Performs keyword, semantic, or hybrid search """
+# async def perform_search(query, search_type="keyword"):
+#     """ Performs keyword, semantic, or hybrid search """
 
-    # documents = get_blob_files()
-    # search_client.upload_documents(documents) # UNDERSTAND MORE ABOUT THIS CODE. It actually reads from the blob storage and adds to the index
+#     # documents = get_blob_files()
+#     # search_client.upload_documents(documents) # UNDERSTAND MORE ABOUT THIS CODE. It actually reads from the blob storage and adds to the index
 
-    if search_type == "semantic":
-        results = await search_client.search(query, query_type="semantic", semantic_configuration_name="semantic-config")
-    elif search_type == "vector":
-        results = await search_client.search(query, vector_query={"field": "embedding", "query_vector": [0.1] * 1536})
-    else:
-        results = await search_client.search(query)
+#     if search_type == "semantic":
+#         results = await search_client.search(query, query_type="semantic", semantic_configuration_name="semantic-config")
+#     elif search_type == "vector":
+#         results = await search_client.search(query, vector_query={"field": "embedding", "query_vector": [0.1] * 1536})
+#     else:
+#         results = await search_client.search(query)
 
-    for result in results:
-        logger.info(result)
+#     for result in results:
+#         logger.info(result)
 
 #endregion
 
 #  Main Function
-async def store_to_azure_ai_search(collection_name: str, use_semantic_chunking: bool):
+async def store_to_azure_ai_search(collection_name: str, use_semantic_chunking: bool, isDocIntelligence: bool):
     """Main function to execute the workflow."""
+
+
+
+    SEARCH_INDEX_NAME = SEARCH_INDEX_NAME_Json if isDocIntelligence else SEARCH_INDEX_NAME_pdf
+    index_name = f"{SEARCH_INDEX_NAME}-{env_instance}"
+
+    # Update dependent names dynamically
+    datasource_name = f"{SEARCH_INDEX_NAME}-blob-{env_instance}"
+    skillset_name = f"{SEARCH_INDEX_NAME}-skillset-{env_instance}"
+    indexer_name = f"{SEARCH_INDEX_NAME}-indexer-{env_instance}"
+    hnswProfile = f"{SEARCH_INDEX_NAME}-hnswProfile-{env_instance}"
+    hnswAlgConfigName = f"{SEARCH_INDEX_NAME}-hnsw-config-{env_instance}"
+    vectorizerName = f"{SEARCH_INDEX_NAME}-vectorizer-{env_instance}"
+    semanticConfig = f"{SEARCH_INDEX_NAME}-semantic-config-{env_instance}"
     # base_path = "C:/Users/KEO1COB/OneDrive - Bosch Group/Documents/Office/PycharmProjects/NextGenCX/chatwithapi/"
     # Process PDF files
     # pdf_folder_path = Path(os.path.join(RAG_DOCUMENTS_FOLDER, "RAG_" + collection_name))
-    # pdf_folder_path = Path(base_path) / pdf_folder
     pdf_folder_path = Path(os.path.join(RAG_DOCUMENTS_FOLDER, "RAG_" + collection_name))
     json_folder_path = Path(os.path.join(pdf_folder_path, "json"))
     if not json_folder_path.exists():
         json_folder_path.mkdir(parents=True, exist_ok=True)
 
-    blob_url = await upload_file_to_blob(json_folder_path)
-    logger.info(f"Blob URL: {blob_url}")
-    await create_data_source()    
-    index_name, semantic_configuration_name = await create_search_index_json()
-    # await create_skillset()
-    await create_indexer_json()
+    if isDocIntelligence == True:
+       field_to_select= [ "content", "headings", "subheadings", "footers"]# ["title", "chunk"],in
+       logger.info("this is docIntelligence", isDocIntelligence)
+       print("this is docIntelligence", isDocIntelligence)
+       blob_url = await upload_file_to_blob(json_folder_path,BLOB_JSON_CONTAINER_NAME)
+       logger.info(f"Blob URL: {blob_url}")
+       await create_data_source(BLOB_JSON_CONTAINER_NAME,datasource_name)    
+       index_name, semantic_configuration_name = await create_search_index_json(index_name,hnswProfile, hnswAlgConfigName, vectorizerName, semanticConfig)
+       # await create_skillset()
+       await create_indexer_json(indexer_name,datasource_name,index_name)
 
-    return index_name, semantic_configuration_name
+    else:
+        field_to_select = ["title", "chunk"]
+        logger.info("this is not docIntelligence", isDocIntelligence)
+        print("this is docIntelligence", isDocIntelligence)
+
+        if not pdf_folder_path.exists():
+            pdf_folder_path.mkdir(parents=True, exist_ok=True)
+
+        blob_url = await upload_file_to_blob(pdf_folder_path, BLOB_CONTAINER_NAME)
+        logger.info(f"Blob URL for pdf: {blob_url}")
+        await create_data_source(BLOB_CONTAINER_NAME,datasource_name)    
+        index_name, semantic_configuration_name = await create_search_index(index_name,hnswProfile, hnswAlgConfigName, vectorizerName, semanticConfig)
+        await create_skillset(index_name, skillset_name)
+        await create_indexer(indexer_name,skillset_name,datasource_name,index_name)
+
+    return index_name, semantic_configuration_name,field_to_select
     
     # input("\n Press Enter to run a Semantic Search Query... ")
     # query = input(" Enter a search query: ")
