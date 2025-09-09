@@ -1015,7 +1015,8 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
 
     gpt_id = str(gpt["_id"])
     USE_CASE_CONFIG = await update_use_case_config(gpt_id)
- 
+     
+   
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
     role_information, model_configuration = await get_role_information(use_case, USE_CASE_CONFIG) if use_rag else ("AI Assistant", model_configuration)
@@ -1210,6 +1211,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
     # USAGE
         python search_documents.py
     """
+
     logger.info("Inside fetch data from Azure Search")
 
     sources_formatted = ""
