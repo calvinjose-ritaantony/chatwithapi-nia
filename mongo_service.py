@@ -7,6 +7,7 @@ from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.results import UpdateResult, InsertOneResult, DeleteResult
 from pymongo.errors import DuplicateKeyError
 import re
+from prompt_template import build_prompt_templates
 
 from data.GPTData import GPTData
 from data.MessageData import Message
@@ -39,6 +40,8 @@ async def get_collection(collection_name:str):
         mongo_collection = db["prompts"]
     elif collection_name == "pdfs":  
         mongo_collection = db["pdfs"]
+    elif collection_name == "prompts_template":
+        mongo_collection = db["prompts_template"]
     
     return mongo_collection
 
@@ -668,4 +671,39 @@ async def save_pdf_content(gpt_id: str, user: str, pdf_file_name: str, pdf_conte
     result = await pdfs_collection.insert_one(document)
     logger.info(f"Saved PDF content for user {user}, file {pdf_file_name}, id {result.inserted_id}")
     return str(result.inserted_id)
+
+## function to save prompt templates as a collection inside the mongo
+async def save_prompt_templates_to_db(gpt_id: str):
+    
+    prompt_templates = await build_prompt_templates(gpt_id)
+    prompts_collection = await get_collection("prompts_template")
+
+    inserted_ids = []
+    for name, template in prompt_templates.items():
+        doc = template.__dict__.copy()
+        doc["gpt_id"] = gpt_id
+        doc["name"] = name
+        result = await prompts_collection.insert_one(doc)
+        inserted_ids.append(str(result.inserted_id))
+        logger.info(f"Inserted prompt template '{name}' with ID: {result.inserted_id}")
+
+    return inserted_ids
+
+#fetched the prompts template collection from db
+async def get_prompt_templates_from_db(gpt_id: str):
+   
+    prompts_collection = await get_collection("prompts_template")
+    templates_list = await prompts_collection.find({"gpt_id": gpt_id}).to_list(None)
+
+    # Convert ObjectId to string for each document
+    templates_dict = {}
+    for template in templates_list:
+        if "_id" in template:
+            template["_id"] = str(template["_id"])
+        if "name" in template:
+            templates_dict[template["name"]] = template
+
+    return templates_dict
+
+
 

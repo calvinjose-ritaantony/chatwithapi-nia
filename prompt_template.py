@@ -4,11 +4,13 @@ import asyncio
 import fastapi
 import logging
 from fastapi import APIRouter, HTTPException
-from mongo_service import get_usecases, get_usecases_list
+
 
 
 #fetch use case configurations from MongoDB for the specified gpt_id
 async def build_prompt_templates(gpt_id: str):
+    
+    from mongo_service import get_usecases
     usecases_list = await get_usecases(gpt_id)
     USE_CASE_CONFIG = {uc["name"]: uc for uc in usecases_list if "name" in uc}
 
@@ -38,7 +40,7 @@ async def build_prompt_templates(gpt_id: str):
             prompts=config.get("prompts", [])
         )
 
-    print("********Prompt templates dict :", prompt_templates)
+    
     return prompt_templates
 
 
