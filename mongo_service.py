@@ -16,6 +16,8 @@ from mongo_client import get_mongo_db
 from role_mapping import NIA_OFFICIAL_MAIL, NIA_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE, USE_CASES_LIST
 from role_mapping import NIA_TOOL_FUNCTIONS
 
+PROMPT_TEMPLATES={}
+app_cache = {}
 logger = logging.getLogger(__name__)
 
 ignored_content = "The requested information is not found in the retrieved data. Please try another query or topic."
@@ -85,7 +87,7 @@ async def update_gpt(gpt_id: str, gpt_name: str, updated_gpt: GPTData):
 
         # Update in messages table as well to maintain consistency
         await update_system_message(gpt_id, updated_gpt.description)
-
+        
     logger.info(f"Updated GPT: {gpt_name} successfully.")
 
     return result
@@ -649,6 +651,11 @@ async def get_gpts_for_user(username):
         gpt["_id"] = str(gpt.get("_id", "")) # Convert ObjectId to string
         gpt["use_case_id"] = str(gpt.get("use_case_id", "")) # Convert ObjectId to string or set to empty string if not available
 
+    
+    PROMPT_TEMPLATES = await get_prompt_templates_from_db(gpt_id=gpt["_id"])   
+    app_cache["PROMPT_TEMPLATES"] = PROMPT_TEMPLATES
+    logger.info(f"Fetched prompt templates from DB: {PROMPT_TEMPLATES}")
+
     return gpts
 
 async def get_gpt_by_id(gpt_id):
@@ -657,7 +664,6 @@ async def get_gpt_by_id(gpt_id):
     return gpt
 
 #### functions for storing the PDF content ####
-
 async def save_pdf_content(gpt_id: str, user: str, pdf_file_name: str, pdf_content: str):
     
     pdfs_collection = await get_collection("pdfs")
@@ -674,9 +680,17 @@ async def save_pdf_content(gpt_id: str, user: str, pdf_file_name: str, pdf_conte
 
 ## function to save prompt templates as a collection inside the mongo
 async def save_prompt_templates_to_db(gpt_id: str):
-    
-    prompt_templates = await build_prompt_templates(gpt_id)
+
     prompts_collection = await get_collection("prompts_template")
+    delete_result = await prompts_collection.delete_many({"gpt_id": gpt_id})     #delete the old records to avoid duplicates
+
+    if delete_result.deleted_count > 0:
+        logger.info(f"Deleted {delete_result.deleted_count} prompt templates for gpt_id: {gpt_id}")
+    else:
+        logger.info(f"No prompt templates found for gpt_id: {gpt_id} to delete")
+
+    # Build the prompt templates
+    prompt_templates = await build_prompt_templates(gpt_id)
 
     inserted_ids = []
     for name, template in prompt_templates.items():
@@ -685,7 +699,7 @@ async def save_prompt_templates_to_db(gpt_id: str):
         doc["name"] = name
         result = await prompts_collection.insert_one(doc)
         inserted_ids.append(str(result.inserted_id))
-        logger.info(f"Inserted prompt template '{name}' with ID: {result.inserted_id}")
+        logger.info(f"Saved prompt template to db, Inserted prompt template '{name}' with ID: {result.inserted_id}")
 
     return inserted_ids
 

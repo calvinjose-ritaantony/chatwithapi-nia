@@ -35,7 +35,7 @@ from gpt_utils import extract_json_content, extract_response, get_previous_conte
 from standalone_programs.image_analyzer import analyze_image
 from dotenv import load_dotenv # For environment variables (recommended)
 
-from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases
+from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases,PROMPT_TEMPLATES,get_prompt_templates_from_db,app_cache,save_prompt_templates_to_db
 from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern, GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE #
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
@@ -47,6 +47,8 @@ from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUC
 
 from mongo_service import save_pdf_content
 PDF_CONTENT_STORE = {}
+
+
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
@@ -99,9 +101,6 @@ DEFAULT_FOLLOW_UP_QUESTIONS = ["I would like to know more about this topic", "I 
 blob_service_client = BlobServiceClient(f"https://{AZURE_BLOB_STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
     credential=AZURE_BLOB_STORAGE_ACCESS_KEY
 )
-
-
-PROMPTS_TEMPLATE = {}
 
 async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: str, stream: bool) -> AsyncAzureOpenAI:
     #logger.info(f"delimiter: {delimiter} \ndefault_model_name: {default_model_name} \necomm_model_name: {ecomm_model_name} \nazure_endpoint: {azure_endpoint} \napi_key: {api_key} \napi_version: {api_version} \nsearch_endpoint: {search_endpoint} \nsearch_key: {search_key} \nsearch_index: {search_index}")
@@ -850,13 +849,13 @@ async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, 
         logger.error(f"Error occurred while fetching model response: {e}", exc_info=True)
         return StreamingResponse(iter([str(e)]), media_type="text/event-stream")
     
-async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, PROMPTS_TEMPLATE: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, PROMPT_TEMPLATES: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
 
     logger.info(f"USE_CASE : {use_case}")
 
-    USER_PROMPT = PROMPTS_TEMPLATE[use_case]["context"]
+    USER_PROMPT = PROMPT_TEMPLATES[use_case]["context"]
 
-    #logger.info(f"PROMPTS_TEMPLATE[{use_case}]: {USER_PROMPT}")
+    #logger.info(f"PROMPT_TEMPLATES[{use_case}]: {USER_PROMPT}")
 
     #context_information, additional_context_information, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration, "pre_response")
     context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(search_query=user_message, 
@@ -866,7 +865,7 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
                                                                                                                             conversations=conversations, 
                                                                                                                             model_configuration=model_configuration,
                                                                                                                             scenario="pre_response",
-                                                                                                                            prompts_template=PROMPTS_TEMPLATE,
+                                                                                                                            prompts_template=PROMPT_TEMPLATES,
                                                                                                                             socket_manager=socket_manager, 
                                                                                                                             websocket=websocket)
     
@@ -1016,11 +1015,14 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     DEFAULT_IMAGE_RESPONSE = ""
 
     gpt_id = str(gpt["_id"])
-    PROMPTS_TEMPLATE = await update_prompt_templates(gpt_id)
-      
+    
+    PROMPT_TEMPLATES = app_cache.get("PROMPT_TEMPLATES")
+    
+    logger.info(f"prompt_templates in azureai_utils {PROMPT_TEMPLATES}") 
+
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
-    role_information, model_configuration = await get_role_information(use_case, PROMPTS_TEMPLATE) if use_rag else ("AI Assistant", model_configuration)
+    role_information, model_configuration = await get_role_information(use_case, PROMPT_TEMPLATES) if use_rag else ("AI Assistant", model_configuration)
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
  
     # Fetch the thinking process for the selected use case
@@ -1099,14 +1101,14 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             conversations=conversations,
             model_configuration=model_configuration,
             scenario="post_response",
-            prompts_template=PROMPTS_TEMPLATE,
+            prompts_template=PROMPT_TEMPLATES,
             socket_manager=socket_manager, 
             websocket=websocket)
            
         if web_search_results is None or web_search_results == "":
             web_search_results = "No Data from Web Search"
 
-        USER_PROMPT = PROMPTS_TEMPLATE.get(use_case, {}).get("context", "{query}")
+        USER_PROMPT = PROMPT_TEMPLATES.get(use_case, {}).get("context", "{query}")
 
         conversations.append({
             "role": "user",
@@ -1135,11 +1137,11 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
  
         # Step 2 : Function Calling
         if image_response is not None and image_response.get("model_response") is not None and image_response.get("model_response") != "":
-            await preprocessForRAG(user_message, image_response.get("model_response"), use_case, gpt, conversations, model_configuration, PROMPTS_TEMPLATE, socket_manager, websocket)
+            await preprocessForRAG(user_message, image_response.get("model_response"), use_case, gpt, conversations, model_configuration, PROMPT_TEMPLATES, socket_manager, websocket)
     elif use_rag and not has_image:
         logger.info("CASE 3 : RAG and No Image")
         proceed = True
-        await preprocessForRAG(user_message, DEFAULT_IMAGE_RESPONSE, use_case, gpt, conversations, model_configuration, PROMPTS_TEMPLATE, socket_manager, websocket)
+        await preprocessForRAG(user_message, DEFAULT_IMAGE_RESPONSE, use_case, gpt, conversations, model_configuration, PROMPT_TEMPLATES, socket_manager, websocket)
         conversations.append({"role": "user", "content": user_message})
     else:
         logger.info("CASE 4 : No RAG and No Image")
@@ -1168,12 +1170,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             await socket_manager.send_json({"response" : "Send Data to Model for Response Generation", "type": "thinking"}, websocket)
 
         if streaming_response:
-            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, PROMPTS_TEMPLATE, role_information, websocket, socket_manager)
+            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, PROMPT_TEMPLATES, role_information, websocket, socket_manager)
         else:
             if use_case != "DEFAULT":
                 pass
                 # await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
-            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, PROMPTS_TEMPLATE, role_information, websocket, socket_manager)
+            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, PROMPT_TEMPLATES, role_information, websocket, socket_manager)
             logger.info(f"Response from model: {response}")
 
     # Sometimes model returns "null" which is not supported by python
@@ -1255,7 +1257,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         azure_ai_search_client = SearchClient(
             endpoint=os.getenv("SEARCH_ENDPOINT_URL"),
             #index_name=os.getenv("SEARCH_INDEX_NAME"),
-            # index_name=PROMPTS_TEMPLATE[use_case]["index_name"],
+            # index_name=PROMPT_TEMPLATES[use_case]["index_name"],
             index_name = index_name,
             credential=credential)
         
@@ -1271,7 +1273,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
             selected_fields = ALL_FIELDS 
 
         logger.info(f"Selected Fields: {selected_fields}")
-        # semantic_config_name = PROMPTS_TEMPLATE[use_case]["semantic_configuration_name"]
+        # semantic_config_name = PROMPT_TEMPLATES[use_case]["semantic_configuration_name"]
         # logger.info(f"Semantic Config Name {semantic_config_name}")
         #selected_fields = ["user_name", "order_id", "product_description", "brand", "order_date", "status", "delivery_date"]
         search_results = azure_ai_search_client.search(search_text=search_query, 
@@ -1279,7 +1281,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
                                                  top=prompts_template.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
-                                                #  semantic_configuration_name=PROMPTS_TEMPLATE[use_case]["semantic_configuration_name"],
+                                                #  semantic_configuration_name=PROMPT_TEMPLATES[use_case]["semantic_configuration_name"],
                                                  semantic_configuration_name = semantic_configuration_name,
                                                  select=selected_fields)
         additional_search_results = []
@@ -1577,18 +1579,18 @@ async def get_use_case(gpt: GPTData) -> str:
 
 ## populate the PROMPTS TEMPLATES dict 
 
-async def update_prompt_templates(gpt_id: str):
+# async def update_prompt_templates(gpt_id: str):
 
-    from mongo_service import save_prompt_templates_to_db, get_prompt_templates_from_db
+#     from mongo_service import save_prompt_templates_to_db, get_prompt_templates_from_db
       
-    # Ensure prompt templates are saved/updated in the DB
-    saved_prompt_templates_list = await save_prompt_templates_to_db(gpt_id) 
-    logger.info(f"Saved/Updated prompt templates in DB for gpt_id: {gpt_id}")
+#     # Ensure prompt templates are saved/updated in the DB
+#     saved_prompt_templates_list = await save_prompt_templates_to_db(gpt_id) 
+#     logger.info(f"Saved/Updated prompt templates in DB for gpt_id: {gpt_id}")
 
-    PROMPT_TEMPLATES = await get_prompt_templates_from_db(gpt_id)
-    logger.info(f"Prompt templates updated: {PROMPT_TEMPLATES.keys()}")
+#     PROMPT_TEMPLATES = await get_prompt_templates_from_db(gpt_id)
+#     logger.info(f"Prompt templates updated: {PROMPT_TEMPLATES.keys()}")
 
-    return PROMPT_TEMPLATES
+#     return PROMPT_TEMPLATES
 
 
 async def construct_model_configuration(model_configuration) -> ModelConfiguration:
@@ -1630,32 +1632,32 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
             await socket_manager.send_json({"response": "Generating the pdf...", "type": "thinking"}, websocket)
             logger.info("Thinking message sent successfully")
             
-        parsed = None
-        if isinstance(pdf_content, str):
-            try:
-                parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
-            except Exception:
-                try:
-                    parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
-                except Exception:
-                    parsed = None
-        if parsed:
-            # Serialize to readable text
-            text = f"{parsed.title}\n\n{parsed.description}\n\n"
-            for block in parsed.blocks:
-                if block.block_type == "text":
-                    text += f"{block.title}\n{block.content}\n\n"
-                elif block.block_type == "table":
-                    text += f"{block.title}\n"
-                    text += "\t".join(block.headers) + "\n"
-                    for row in block.rows:
-                        text += "\t".join(row) + "\n"
-                    text += "\n"
-                elif block.block_type == "chart":
-                    text += f"{block.title} ({block.chart_type} chart)\n"
-                    text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
-            text += f"{parsed.closure}\n"
-            pdf_content = text
+        # parsed = None
+        # if isinstance(pdf_content, str):
+        #     try:
+        #         parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
+        #     except Exception:
+        #         try:
+        #             parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
+        #         except Exception:
+        #             parsed = None
+        # if parsed:
+        #     # Serialize to readable text
+        #     text = f"{parsed.title}\n\n{parsed.description}\n\n"
+        #     for block in parsed.blocks:
+        #         if block.block_type == "text":
+        #             text += f"{block.title}\n{block.content}\n\n"
+        #         elif block.block_type == "table":
+        #             text += f"{block.title}\n"
+        #             text += "\t".join(block.headers) + "\n"
+        #             for row in block.rows:
+        #                 text += "\t".join(row) + "\n"
+        #             text += "\n"
+        #         elif block.block_type == "chart":
+        #             text += f"{block.title} ({block.chart_type} chart)\n"
+        #             text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
+        #     text += f"{parsed.closure}\n"
+        #     pdf_content = text
 
         gpt_user = gpt["user"]
         pdf_id = await save_pdf_content(gpt_id=gpt["_id"], user=gpt_user, pdf_file_name=file_name, pdf_content=pdf_content)
@@ -1833,14 +1835,14 @@ def base64_to_image(base64_string: str, save_path=None, filename=None):
         logging.error(f"Error converting base64 to image: {e}", exc_info=True)
         return None, None
     
-async def get_role_information(use_case, PROMPTS_TEMPLATE: dict):
+async def get_role_information(use_case, PROMPT_TEMPLATES: dict):
     role_information = "e-commerce analytics agent"
     model_configuration = DEFAULT_MODEL_CONFIGURATION
 
     # Mapping of use cases to role_information values
-    if use_case and use_case in PROMPTS_TEMPLATE:
-        role_information = PROMPTS_TEMPLATE[use_case]["role"]
-        model_configuration = PROMPTS_TEMPLATE[use_case]["model_configuration"]
+    if use_case and use_case in PROMPT_TEMPLATES:
+        role_information = PROMPT_TEMPLATES[use_case]["role"]
+        model_configuration = PROMPT_TEMPLATES[use_case]["model_configuration"]
 
     logger.info(f"Use_case: {use_case} \n Role Information: {role_information} \n Model Configuration: {model_configuration}")
     
