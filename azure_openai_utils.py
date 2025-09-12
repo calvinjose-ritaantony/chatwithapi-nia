@@ -1,5 +1,6 @@
 import io
 from typing import Any, List
+import unicodedata
 
 from mongo_service import get_usecases_list
 
@@ -48,6 +49,8 @@ from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
 from mongo_service import save_pdf_content
+from fpdf import FPDF
+import re
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
@@ -1678,32 +1681,32 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
             await socket_manager.send_json({"response": "Generating the pdf...", "type": "thinking"}, websocket)
             logger.info("Thinking message sent successfully")
             
-        parsed = None
-        if isinstance(pdf_content, str):
-            try:
-                parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
-            except Exception:
-                try:
-                    parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
-                except Exception:
-                    parsed = None
-        if parsed:
-            # Serialize to readable text
-            text = f"{parsed.title}\n\n{parsed.description}\n\n"
-            for block in parsed.blocks:
-                if block.block_type == "text":
-                    text += f"{block.title}\n{block.content}\n\n"
-                elif block.block_type == "table":
-                    text += f"{block.title}\n"
-                    text += "\t".join(block.headers) + "\n"
-                    for row in block.rows:
-                        text += "\t".join(row) + "\n"
-                    text += "\n"
-                elif block.block_type == "chart":
-                    text += f"{block.title} ({block.chart_type} chart)\n"
-                    text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
-            text += f"{parsed.closure}\n"
-            pdf_content = text
+        # parsed = None
+        # if isinstance(pdf_content, str):
+        #     try:
+        #         parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
+        #     except Exception:
+        #         try:
+        #             parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
+        #         except Exception:
+        #             parsed = None
+        # if parsed:
+        #     # Serialize to readable text
+        #     text = f"{parsed.title}\n\n{parsed.description}\n\n"
+        #     for block in parsed.blocks:
+        #         if block.block_type == "text":
+        #             text += f"{block.title}\n{block.content}\n\n"
+        #         elif block.block_type == "table":
+        #             text += f"{block.title}\n"
+        #             text += "\t".join(block.headers) + "\n"
+        #             for row in block.rows:
+        #                 text += "\t".join(row) + "\n"
+        #             text += "\n"
+        #         elif block.block_type == "chart":
+        #             text += f"{block.title} ({block.chart_type} chart)\n"
+        #             text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
+        #     text += f"{parsed.closure}\n"
+        #     pdf_content = text
 
         gpt_user = gpt["user"]
         pdf_id = await save_pdf_content(gpt_id=gpt["_id"], user=gpt_user, pdf_file_name=file_name, pdf_content=pdf_content)
@@ -1728,12 +1731,80 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
     return pdf_id
 
 async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf") -> str:
-    pdf: FPDF = FPDF()
+    class PDF(FPDF):
+        def __init__(self):
+            super().__init__()
+            self.set_auto_page_break(auto=True, margin=15)
+            self.set_margins(20, 20, 20)  # left, top, right
+            self.margin_color = (200, 200, 200)  # light gray
+
+        def header(self):
+            # Draw margin highlight (rectangle)
+            self.set_draw_color(*self.margin_color)
+            self.rect(self.l_margin, self.t_margin, self.w - self.l_margin - self.r_margin, self.h - self.t_margin - self.b_margin)
+            self.set_draw_color(0, 0, 0)  # reset to black
+
+    def render_inline_bold(pdf, text, indent=False):
+        """
+        Print a line with **bold** text segments.
+        """
+        bold_pattern = re.compile(r"\*\*(.*?)\*\*")
+        parts = re.split(r"(\*\*.*?\*\*)", text)
+
+        for part in parts:
+            if part.startswith("**") and part.endswith("**"):
+                pdf.set_font("Helvetica", style="B", size=12)
+                pdf.write(8, part[2:-2])  # remove **
+            else:
+                pdf.set_font("Helvetica", size=12)
+                pdf.write(8, part)
+        pdf.ln(8 if not indent else 6)  # move to next line
+
+    def render_markdown(pdf, text):
+
+            bold_pattern = re.compile(r"\*\*(.*?)\*\*")
+            bullet_pattern = re.compile(r"^\s*[-*]\s+(.*)")
+
+            pdf.set_font("Helvetica", size=12)  # use built-in font
+            lines = text.split("\n")
+
+            for line in lines:
+                stripped = line.strip()
+
+                # Empty line → add spacing
+                if not stripped:
+                    pdf.ln(6)
+                    continue
+
+                bullet_match = bullet_pattern.match(line)
+                if bullet_match:
+                    # Handle bullet point
+                    content = bullet_match.group(1)
+
+                    # Add bullet symbol
+                    pdf.cell(5, 8, "-", ln=0)  # safe bullet
+                    pdf.set_x(pdf.get_x())  # reset X for text
+
+                    # Render text with bold support
+                    render_inline_bold(pdf, content, indent=True)
+
+                else:
+                    # Regular line with bold
+                    render_inline_bold(pdf, line)
+
+
+
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    for line in text.split('\n'):
-        pdf.cell(0, 10, txt=line, ln=1)
+    # Make sure ArialSans.ttf is present in the same directory as this script
+    def safe_text(s: str) -> str:
+    # Replace smart quotes, bullets, etc.
+        return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+
+    text = safe_text(text)
+    
+    render_markdown(pdf, text)
+
     # Get user's Documents folder
     documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
     nia_dir = os.path.join(documents_dir, "NIA")
@@ -1746,6 +1817,18 @@ async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     pdf.output(output_path)
     return output_path
+    # # Get user's Documents folder
+    # documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+    # nia_dir = os.path.join(documents_dir, "NIA")
+    # date_folder = datetime.datetime.now().strftime("%Y-%m-%d")
+    # output_dir = os.path.join(nia_dir, date_folder)
+    # os.makedirs(output_dir, exist_ok=True)
+
+    # # Always use the same filename, overwrite if exists
+    # output_path = os.path.join(output_dir, file_name)
+    # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    # pdf.output(output_path)
+    # return output_path
 
 # async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf") -> str:
 #     # Switch to fpdf2 which has better Unicode support
@@ -1754,7 +1837,7 @@ async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf")
 #     class PDF(FPDF):
 #         def __init__(self):
 #             super().__init__()
-#             #self.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+#             #self.add_font('Arial', '', 'ArialSansCondensed.ttf', uni=True)
     
 #     pdf = PDF()
 #     pdf.add_page()

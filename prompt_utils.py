@@ -93,6 +93,7 @@ class PromptValidator:
             potential_json = json_match.group(1)
             try:
                 json.loads(potential_json)  # Validate it's proper JSON
+                logger.info(f"Potential Json: {potential_json}")
                 return potential_json
             except:
                 pass  # If invalid, continue to other methods
@@ -113,25 +114,44 @@ class PromptValidator:
                         try:
                             json_candidate = response[start_index:i+1]
                             json.loads(json_candidate)  # Validate
+                            logger.info(f"Potential Json: {json_candidate}")
                             return json_candidate
                         except:
                             pass  # If invalid, continue searching
 
-        # If previous methods fail, try a more aggressive approach with regex
+        # Try with regex
         try:
-            # Look for any JSON-like structure with balanced braces
-            json_pattern = r'{(?:[^{}]|(?R))*}'
             matches = re.findall(r'{.*}', response, re.DOTALL)
-            
-            # Try each match from longest to shortest
             for match in sorted(matches, key=len, reverse=True):
                 try:
-                    # Clean up common issues in LLM outputs
                     cleaned_json = self._clean_json_string(match)
                     json.loads(cleaned_json)
+                    logger.info(f"Potential Json: {cleaned_json}")  
                     return cleaned_json
                 except:
                     continue
+        except:
+            pass
+
+        # New step: try parsing as Python dict (AST), then fix to JSON
+        try:
+            import ast
+            parsed = ast.literal_eval(response)  # Handles single quotes, True/False/None
+            fixed_json = json.dumps(parsed)      # Convert to strict JSON
+            logger.info(f"AST Parsed Json: {fixed_json}")
+            return fixed_json
+        except:
+            pass
+
+        # Extra cleaning attempt: replace Pythonisms with JSON equivalents
+        try:
+            cleaned = response.replace("'", '"') \
+                            .replace("True", "true") \
+                            .replace("False", "false") \
+                            .replace("None", "null")
+            json.loads(cleaned)
+            logger.info(f"Cleaned Json: {cleaned}")
+            return cleaned
         except:
             pass
             
