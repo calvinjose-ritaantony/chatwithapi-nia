@@ -1316,7 +1316,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         logger.info(f"Search Client: {azure_ai_search_client} \nSearch Query: {search_query}")
 
         # Get the documents
-        if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR":
+        if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR" or use_case == "NP_KNOWLEDGE_BASE":
             selected_fields = use_case_config[use_case]["fields_to_select"]
         else:
             selected_fields = ALL_FIELDS 
