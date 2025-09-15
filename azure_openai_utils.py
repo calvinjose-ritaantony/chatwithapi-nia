@@ -1017,7 +1017,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     gpt_id = str(gpt["_id"])
     
     PROMPT_TEMPLATES = app_cache.get("PROMPT_TEMPLATES")
-    
+    #await save_prompt_templates_to_db(gpt_id)
     logger.info(f"prompt_templates in azureai_utils {PROMPT_TEMPLATES}") 
 
     # Step 1 : Get the use case, role information, model configuration parameters
