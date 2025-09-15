@@ -35,6 +35,7 @@ echo "The uvicorn version installed is:"
 uvicorn --version
 
 # Start the FastAPI app with Gunicorn
-gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind=0.0.0.0:8000
+# gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app --bind=0.0.0.0:8000
+gunicorn -k uvicorn.workers.UvicornWorker main:app --bind=0.0.0.0:8000
 
 echo "Startup Completed for customgptapp2 again"
