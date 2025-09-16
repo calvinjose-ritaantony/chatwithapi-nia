@@ -208,8 +208,13 @@ async def get_data_from_web_search(search_query: str, gpt: GPTData, region: str 
         return search_summary
 
     try:
-        search_summary = await search_web_with_sonar(query=search_query)
+        search_summary, citations = await search_web_with_sonar(query=search_query)
         logger.info(f"Web Search Summary {search_summary}")
+
+        # Send the web search summary and citations to UI for thinking process update
+        if usecase != "DEFAULT" and socket_manager is not None:
+            await socket_manager.send_json({"response" : {"web_search_response" : search_summary, "citations" : citations}, "type": "web_search_context"}, websocket)
+
     except Exception as e:
         logger.error(f"Web search failed: {e}", exc_info=True)
 
@@ -916,6 +921,8 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
 async def processImage(streaming_response: bool, save_response_to_db: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, conversations: list, uploadedImage: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     image_url = ""
     base64_image = ""
+    image_response = "No data found in image"
+
     try:
         if uploadedImage is not None and uploadedImage.filename != "blob" and uploadedImage.filename != "dummy":
             image_url = await store_to_blob_storage(uploadedImage)
@@ -966,17 +973,21 @@ async def processImage(streaming_response: bool, save_response_to_db: bool, user
 
             # 5. Call Azure OpenAI API for image analysis
             if streaming_response:
-                response = await analyzeImage_stream(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
+                image_response = await analyzeImage_stream(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
             else:
-                response = await analyzeImage_standard(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
+                image_response = await analyzeImage_standard(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
 
-            logger.info(f"Image Response: {response}")
+            logger.info(f"Image Response: {image_response}")
+
+            # Send the image description and image name to UI for thinking process update
+            if await get_use_case(gpt) != "DEFAULT" and socket_manager is not None:
+                await socket_manager.send_json({"response" : {"image_response" : image_response, "image_name" : uploadedImage.filename}, "type": "image_context"}, websocket)
 
     except Exception as e:
         logger.error(f"Error occurred while processing image: {e}", exc_info=True)
-        response = str(e) # Return the error message as response
-    
-    return response
+        image_response = "No data found in image"
+
+    return image_response
 
 async def processResponse(response):
     total_tokens = response.usage.total_tokens
@@ -1281,7 +1292,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
     use_cases = await get_usecases(gpt_id)
 
     if use_case != "DEFAULT"  and socket_manager is not None:
-        await socket_manager.send_json({"response": "Starting Azure Search for data...", "type": "thinking"}, websocket)
+        await socket_manager.send_json({"response": "Performing semantic fetch in Azure AI Search for context data...", "type": "thinking"}, websocket)
 
     # Extract the matching use case from the collection
     use_case_data = next((uc for uc in use_cases if uc["name"] == use_case), None)
@@ -1366,6 +1377,10 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         # Serialize the results
         sources_formatted = json.dumps(results_list, default=lambda x: x.__dict__, indent=2)
         logger.info(f"Context Information: {sources_formatted}")
+
+        # Send the Azure AI Search results, search query to UI for thinking process update
+        if use_case != "DEFAULT"  and socket_manager is not None:
+            await socket_manager.send_json({"response" : {"ai_search_response" : sources_formatted, "search_text" : search_query}, "type": "ai_search_context"}, websocket)
         
     except Exception as e:
         sources_formatted = ""
@@ -1678,7 +1693,7 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
         logger.info("Generating PDF for use case")
 
         if await get_use_case(gpt) != "DEFAULT" and socket_manager is not None:
-            await socket_manager.send_json({"response": "Generating the pdf...", "type": "thinking"}, websocket)
+            await socket_manager.send_json({"response": f"Generating the pdf...{file_name}", "type": "thinking"}, websocket)
             logger.info("Thinking message sent successfully")
             
         # parsed = None
