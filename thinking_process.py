@@ -182,6 +182,32 @@ REASONING_DATA = {
           "action": "Formatting search results",
           "details": "Preparing structured response with document references"
         }
+      ],"NP_KNOWLEDGE_BASE": [
+        {
+          "step": "Query Analysis",
+          "action": "Processing search query",
+          "details": "Analyzing search terms for nia-pdf-index"
+        },
+        {
+          "step": "Document Scanning",
+          "action": "Searching document repository",
+          "details": "Performing semantic search across documentation"
+        },
+        {
+          "step": "Relevance Ranking",
+          "action": "Ranking search results",
+          "details": "Ordering results by relevance to query"
+        },
+        {
+          "step": "Context Extraction",
+          "action": "Extracting relevant passages",
+          "details": "Identifying most relevant document sections"
+        },
+        {
+          "step": "Response Formatting",
+          "action": "Formatting search results",
+          "details": "Preparing structured response with document references"
+        }
       ],"CUSTOMIZED_RECOMMENDATIONS": [
         {
           "step": "User Profile Analysis",
