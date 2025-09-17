@@ -38,7 +38,7 @@ from gpt_utils import extract_json_content, extract_response, get_previous_conte
 from standalone_programs.image_analyzer import analyze_image
 from dotenv import load_dotenv # For environment variables (recommended)
 
-from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases,PROMPT_TEMPLATES,get_prompt_templates_from_db,app_cache,save_prompt_templates_to_db
+from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases,get_prompt_templates_from_db,save_prompt_templates_to_db,save_pdf_content,app_cache
 from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern, GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE #
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
@@ -48,7 +48,6 @@ from tool_utils import azure_ai_search_tool, web_search_tool, write_response_to_
 from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
-from mongo_service import save_pdf_content
 from fpdf import FPDF
 import re
 
@@ -1156,7 +1155,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 gpt=gpt, 
                 conversations=conversations, 
                 model_configuration=model_configuration, 
-                PROMPT_TEMPLATES=PROMPT_TEMPLATES, 
+                prompts_template=PROMPT_TEMPLATES, 
                 web_search=web_search,
                 socket_manager=socket_manager, 
                 websocket=websocket)
@@ -1224,7 +1223,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 model_configuration=model_configuration, 
                 conversations=conversations, 
                 use_case=use_case, 
-                PROMPT_TEMPLATES=PROMPT_TEMPLATES, 
+                prompts_template=PROMPT_TEMPLATES, 
                 role_information=role_information, 
                 web_search=web_search, 
                 websocket=websocket, 
