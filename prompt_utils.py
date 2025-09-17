@@ -7,7 +7,7 @@ from openai import AsyncAzureOpenAI
 from PromptValidationResult import PromptValidationResult
 from typing import Optional, Dict
 from azure_openai_utils import (GPT_4o_ENDPOINT_URL, GPT_4o_API_KEY, GPT_4o_API_VERSION, GPT_4o_MODEL_NAME)
-from data.refine_prompt_output import RefinePromptOutput
+from data.refine_prompt_output import EvaluationDefinitions, RefinePromptOutput
 
 logger = logging.getLogger(__name__)
 
@@ -124,99 +124,32 @@ class PromptValidator:
         if not prompt or not prompt.strip():
             raise ValueError("Prompt cannot be empty")
         
-        # Define parameter descriptions for clear analysis
-        parameter_descriptions = {
-            "task_definition": "Clearly defines the task or goal to be accomplished",
-            "output_format": "Specifies the expected format and structure of the output",
-            "scope_and_constraints": "Establishes clear boundaries and limitations for the task",
-            "input_data": "Provides necessary context or data inputs needed for the task",
-            "clarity_check": "Ensures instructions are unambiguous and easily understood",
-            "example_inclusion": "Includes examples to demonstrate desired outputs or approaches",
-            "edge_case_handling": "Addresses potential edge cases or unexpected scenarios",
-            "tone_and_persona": "Specifies the desired communication style and personality",
-            "ethical_guardrails": "Provides guidance to ensure ethical and responsible outputs",
-            "performance_optimization": "Includes hints for efficiency or computational considerations",
-            "testability": "Includes criteria for evaluating the success of the response",
-            "domain_relevance": "Ensures contextual alignment with the domain or field of application"
-        }
-
-        evaluation_definitions = {
-                "task_definition": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "output_format": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "scope_and_constraints": {
-                    "adherence": "true or false", 
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "input_data": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "clarity_check": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "example_inclusion": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "edge_case_handling": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "tone_and_persona": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "ethical_guardrails": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "performance_optimization": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "testability": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "domain_relevance": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                }
-            }
-        
         # Create the evaluation and refinement instruction
         refinement_instruction = f"""
-        As an expert prompt engineer, analyze the following prompt and provide a detailed evaluation and refinement.
+        As an expert prompt engineer, analyze the given prompt and provide a detailed evaluation and enhanced refinement of the given prompt. Follow the steps diligently to generate the final response.
+
+        - Step 1: UNDERSTANDING THE CONTEXT AND INTENT
+        Carefully read the provided system and user prompts to fully grasp the context, objectives, and intended outcomes.
+        Identify any implicit goals or requirements that may not be explicitly stated.
         
-        # PART 1: ANALYSIS
-        Analyze the prompt against these criteria:
-        {json.dumps(parameter_descriptions, indent=2)}
+        - Step 2 : ANALYSIS
+        Analyze the prompt against the parameters provided in EvaluationDefinitions class. 
         
-        # PART 2: EVALUATION
-        Evaluate the prompt against these parameters with detailed justification for each parameter.
+        - Step 3:  EVALUATION
+        Evaluate the prompt against the parameters in EvaluationDefinitions class and generate EvaluationItem class with detailed justification, adherence for each parameter.
         
-        # PART 3: REFINEMENT
+        # Step 4: REFINEMENT
         Determine prompt complexity (simple or complex), whether it needs refinement, and if so, provide detailed recommendations.
-        If the system prompt contains information that should be moved from the user prompt, make this transfer in your refinement.
         
         # PART 4: PROMPT ENGINEERING
-        Create a refined version of the prompt that addresses all identified issues, optimizes parameter adherence, and maintains the original intent.
-        If appropriate, move details from the user prompt to the system prompt based on best practices.
-        
+        Create a refined version of the prompt that addresses all identified issues, optimizes parameter adherence, and maintains the original intent. Ensure the refined prompt is clear, specific, and actionable.  
+              
         # PART 5: COMPARATIVE EVALUATION
         Re-evaluate the refined prompt against the same parameters to demonstrate improvements.
         
         # INPUTS
         System prompt: {system_prompt or 'None'}
         User prompt: {prompt}
-        Evaluation parameters: {evaluation_definitions}
 
         """
         
