@@ -34,6 +34,9 @@ from auth_config import azure_scheme
 
 from standalone_programs.simple_gpt import get_conversation
 
+from prompt_template import router as prompt_template_router
+
+
 delimiter = "```"
 load_dotenv()  # Load environment variables from .env file
 create_folders()
@@ -133,6 +136,10 @@ app.include_router(gpt_router_secured, tags=["secured"])
 app.include_router(gpt_router_unsecured, prefix="/backend", tags=["backend"])
 #app.include_router(gpt_router_websocket, prefix="/ws", tags=["ws"])
 #app.include_router(gpt_router, dependencies=[Security(verify_jwt_token, scopes=["access_as_user"])])
+
+###
+app.include_router(prompt_template_router, prefix="/prompt_templates", tags=["prompt_templates"])
+##
 
 # Set up Jinja2 for templating
 templates = Jinja2Templates(directory="templates")

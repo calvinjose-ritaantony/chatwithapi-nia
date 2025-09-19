@@ -38,8 +38,8 @@ from gpt_utils import extract_json_content, extract_response, get_previous_conte
 from standalone_programs.image_analyzer import analyze_image
 from dotenv import load_dotenv # For environment variables (recommended)
 
-from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases
-from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern, GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE #USE_CASE_CONFIG,
+from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases,get_prompt_templates_from_db,save_prompt_templates_to_db,save_pdf_content,app_cache
+from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern, GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE #
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
@@ -48,7 +48,6 @@ from tool_utils import azure_ai_search_tool, web_search_tool, write_response_to_
 from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
-from mongo_service import save_pdf_content
 from fpdf import FPDF
 import re
 
@@ -103,8 +102,6 @@ DEFAULT_FOLLOW_UP_QUESTIONS = ["I would like to know more about this topic", "I 
 blob_service_client = BlobServiceClient(f"https://{AZURE_BLOB_STORAGE_ACCOUNT_NAME}.blob.core.windows.net",
     credential=AZURE_BLOB_STORAGE_ACCESS_KEY
 )
-
-USE_CASE_CONFIG = {}
 
 async def getAzureOpenAIClient(azure_endpoint: str, api_key: str, api_version: str, stream: bool) -> AsyncAzureOpenAI:
     #logger.info(f"delimiter: {delimiter} \ndefault_model_name: {default_model_name} \necomm_model_name: {ecomm_model_name} \nazure_endpoint: {azure_endpoint} \napi_key: {api_key} \napi_version: {api_version} \nsearch_endpoint: {search_endpoint} \nsearch_key: {search_key} \nsearch_index: {search_index}")
@@ -469,7 +466,7 @@ async def handle_ratelimit_exception_stream(gpt: GPTData, model_configuration: M
                         )
                         yield full_response_content
 
-async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict,  role_information: str, web_search:bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, prompts_template: dict,  role_information: str, web_search:bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     
     pdf_id = None
     
@@ -515,7 +512,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
                                           model_response=model_response, 
-                                          use_case_config=use_case_config, 
+                                          prompts_template=prompts_template, 
                                           web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)
@@ -538,7 +535,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
                                           model_response=model_response, 
-                                          use_case_config=use_case_config, 
+                                          prompts_template=prompts_template, 
                                           web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)     
@@ -554,7 +551,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
                                           model_response=model_response, 
-                                          use_case_config=use_case_config, 
+                                          prompts_template=prompts_template, 
                                           web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)      
@@ -582,7 +579,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         "pdf_id": pdf_id
     }
 
-async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, prompts_template: dict, web_search: bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
      # This client is asynchronous and needs await signal. Set stream=True
     try:
         # Get Azure Open AI Client and fetch response
@@ -844,11 +841,13 @@ async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, 
         logger.error(f"Error occurred while fetching model response: {e}", exc_info=True)
         return StreamingResponse(iter([str(e)]), media_type="text/event-stream")
     
-async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, USE_CASE_CONFIG: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, PROMPT_TEMPLATES: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
 
     logger.info(f"USE_CASE : {use_case}")
-    USER_PROMPT = USE_CASE_CONFIG[use_case]["user_message"]
-    #logger.info(f"USE_CASE_CONFIG[{use_case}]: {USER_PROMPT}")
+
+    USER_PROMPT = PROMPT_TEMPLATES[use_case]["context"]
+
+    #logger.info(f"PROMPT_TEMPLATES[{use_case}]: {USER_PROMPT}")
 
     #context_information, additional_context_information, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration, "pre_response")
     context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(
@@ -859,7 +858,7 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
         conversations=conversations, 
         model_configuration=model_configuration,
         scenario="pre_response",
-        use_case_config=USE_CASE_CONFIG,
+        prompts_template=PROMPT_TEMPLATES,
         web_search=web_search,
         socket_manager=socket_manager, 
         websocket=websocket
@@ -999,6 +998,7 @@ async def processResponse(response):
     return main_response, follow_up_questions, total_tokens
 
 async def generate_response(streaming_response: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, uploadedFile: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+    
     has_image: bool = False
     previous_conversations_count = 6
     response = {
@@ -1016,12 +1016,14 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     web_search: bool = model_configuration.web_search
 
     gpt_id = str(gpt["_id"])
-    USE_CASE_CONFIG = await update_use_case_config(gpt_id)
- 
+    
+    PROMPT_TEMPLATES = app_cache.get("PROMPT_TEMPLATES")
+    #await save_prompt_templates_to_db(gpt_id)
+    logger.info(f"prompt_templates in azureai_utils {PROMPT_TEMPLATES}") 
+
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
-    model_configuration = await get_model_configuration(use_case, USE_CASE_CONFIG) if use_rag else (model_configuration)
-    model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
+    model_configuration = await get_role_information(use_case, PROMPT_TEMPLATES) if use_rag else ("AI Assistant", model_configuration)
 
     # Due to last 2 lines, fetch model_configuration from USE_CASE_CONFIG the web search from UI gets lost. 
     # So preserve and reset the value post the actual model configuration is fetched.
@@ -1103,7 +1105,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             conversations=conversations,
             model_configuration=model_configuration,
             scenario="post_response",
-            use_case_config=USE_CASE_CONFIG,
+            prompts_template=PROMPT_TEMPLATES,
             web_search=web_search,
             socket_manager=socket_manager, 
             websocket=websocket
@@ -1112,7 +1114,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         if web_search_results is None or web_search_results == "":
             web_search_results = "No Data from Web Search"
 
-        USER_PROMPT = USE_CASE_CONFIG.get(use_case, {}).get("user_message", "{query}")
+        USER_PROMPT = PROMPT_TEMPLATES.get(use_case, {}).get("context", "{query}")
 
         conversations.append({
             "role": "user",
@@ -1148,7 +1150,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 gpt=gpt, 
                 conversations=conversations, 
                 model_configuration=model_configuration, 
-                USE_CASE_CONFIG=USE_CASE_CONFIG, 
+                prompts_template=PROMPT_TEMPLATES, 
                 web_search=web_search,
                 socket_manager=socket_manager, 
                 websocket=websocket)
@@ -1162,7 +1164,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             gpt=gpt, 
             conversations=conversations, 
             model_configuration=model_configuration, 
-            USE_CASE_CONFIG=USE_CASE_CONFIG, 
+            PROMPT_TEMPLATES=PROMPT_TEMPLATES, 
             web_search=web_search,
             socket_manager=socket_manager, 
             websocket=websocket
@@ -1201,25 +1203,27 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 model_configuration=model_configuration, 
                 conversations=conversations, 
                 use_case=use_case, 
-                use_case_config=USE_CASE_CONFIG, 
+                PROMPT_TEMPLATES=PROMPT_TEMPLATES, 
                 web_search=web_search, 
                 websocket=websocket, 
                 socket_manager=socket_manager)
         else:
-              if use_case != "DEFAULT":
+             if use_case != "DEFAULT":
                 pass
                 # await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
-              response = await get_completion_from_messages_standard(
-                  user_query=user_message, 
-                  gpt=gpt, 
-                  model_configuration=model_configuration, 
-                  conversations=conversations, 
-                  use_case=use_case, 
-                  use_case_config=USE_CASE_CONFIG, 
-                  web_search=web_search, 
-                  websocket=websocket, 
-                  socket_manager=socket_manager
-              )
+            response = await get_completion_from_messages_standard(
+                user_query=user_message, 
+                gpt=gpt, 
+                model_configuration=model_configuration, 
+                conversations=conversations, 
+                use_case=use_case, 
+                prompts_template=PROMPT_TEMPLATES, 
+                role_information=role_information, 
+                web_search=web_search, 
+                websocket=websocket, 
+                socket_manager=socket_manager
+            )
+
             logger.info(f"Response from model: {response}")
 
     # Sometimes model returns "null" which is not supported by python
@@ -1250,7 +1254,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     return response
 
 
-async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, prompts_template: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     """
     # PREREQUISITES
         pip install azure-identity
@@ -1258,6 +1262,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
     # USAGE
         python search_documents.py
     """
+
     logger.info("Inside fetch data from Azure Search")
 
     sources_formatted = ""
@@ -1300,7 +1305,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         azure_ai_search_client = SearchClient(
             endpoint=os.getenv("SEARCH_ENDPOINT_URL"),
             #index_name=os.getenv("SEARCH_INDEX_NAME"),
-            # index_name=USE_CASE_CONFIG[use_case]["index_name"],
+            # index_name=PROMPT_TEMPLATES[use_case]["index_name"],
             index_name = index_name,
             credential=credential)
         
@@ -1311,20 +1316,20 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
 
         # Get the documents
         if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR" or use_case == "NP_KNOWLEDGE_BASE":
-            selected_fields = use_case_config[use_case]["fields_to_select"]
+            selected_fields = prompts_template[use_case]["fields_to_select"]
         else:
             selected_fields = ALL_FIELDS 
 
         logger.info(f"Selected Fields: {selected_fields}")
-        # semantic_config_name = USE_CASE_CONFIG[use_case]["semantic_configuration_name"]
+        # semantic_config_name = PROMPT_TEMPLATES[use_case]["semantic_configuration_name"]
         # logger.info(f"Semantic Config Name {semantic_config_name}")
         #selected_fields = ["user_name", "order_id", "product_description", "brand", "order_date", "status", "delivery_date"]
         search_results = azure_ai_search_client.search(search_text=search_query, 
                                                  #top = 5,
-                                                 top=use_case_config.get(use_case, {}).get("document_count", 30), 
+                                                 top=prompts_template.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
-                                                #  semantic_configuration_name=USE_CASE_CONFIG[use_case]["semantic_configuration_name"],
+                                                #  semantic_configuration_name=PROMPT_TEMPLATES[use_case]["semantic_configuration_name"],
                                                  semantic_configuration_name = semantic_configuration_name,
                                                  select=selected_fields)
         additional_search_results = []
@@ -1338,7 +1343,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
             )
 
             additional_search_results = additional_azure_ai_search_client.search(search_text=search_query, 
-                                                 top=use_case_config.get(use_case, {}).get("document_count", 30), 
+                                                 top=prompts_template.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
                                                  semantic_configuration_name = NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME,
@@ -1444,7 +1449,7 @@ async def summarize_conversations(chat_history, gpt):
 
     return conversation_summary
 
-async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, use_case_config: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, prompts_template: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     function_calling_conversations = []
     data = []
     additional_data = []
@@ -1525,7 +1530,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         use_case=function_args.get("use_case"),
                         get_extra_data= function_args.get("get_extra_data") if use_case == "DOC_SEARCH" else False, # Only for doc search the fetch of extra data must be enabled
-                        use_case_config=use_case_config,
+                        prompts_template=prompts_template,
                         gpt_id = gpt_id,
                         socket_manager=socket_manager,
                         websocket=websocket      
@@ -1538,7 +1543,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         use_case=function_args.get("use_case"),
                         get_extra_data= False, # Only for doc search the fetch of extra data must be enabled
-                        use_case_config=use_case_config,
+                        prompts_template=prompts_template,
                         gpt_id = gpt_id,
                         socket_manager=socket_manager,
                         websocket=websocket      
@@ -1630,22 +1635,30 @@ async def get_use_case(gpt: GPTData) -> str:
 
     return use_case
 
-##################
+# ---------------------------------------------------------------------------------------------------------
 
-async def update_use_case_config(gpt_id: str):
-   
-    usecases_list = await get_usecases(gpt_id)  # handle null condition 
-    USE_CASE_CONFIG = {uc["name"]: uc for uc in usecases_list if "name" in uc}
-    return USE_CASE_CONFIG
+### populate the USE_CASE_CONFIG dict
+# async def update_use_case_config(gpt_id: str):
 
-###############
+#     usecases_list = await get_usecases(gpt_id)
+#     USE_CASE_CONFIG = {uc["name"]: uc for uc in usecases_list if "name" in uc}
+#     return USE_CASE_CONFIG
+# ---------------------------------------------------------------------------------------------------------
 
-async def construct_model_configuration(model_configuration) -> ModelConfiguration:
-    """
-    Construct the model configuration based on the GPT data and provided model configuration.
-    """
-    model_configuration: ModelConfiguration = model_configuration if  isinstance(model_configuration, ModelConfiguration) else ModelConfiguration(**model_configuration)
-    return model_configuration
+## populate the PROMPTS TEMPLATES dict 
+
+# async def update_prompt_templates(gpt_id: str):
+
+#     from mongo_service import save_prompt_templates_to_db, get_prompt_templates_from_db
+      
+#     # Ensure prompt templates are saved/updated in the DB
+#     saved_prompt_templates_list = await save_prompt_templates_to_db(gpt_id) 
+#     logger.info(f"Saved/Updated prompt templates in DB for gpt_id: {gpt_id}")
+
+#     PROMPT_TEMPLATES = await get_prompt_templates_from_db(gpt_id)
+#     logger.info(f"Prompt templates updated: {PROMPT_TEMPLATES.keys()}")
+
+#     return PROMPT_TEMPLATES
 
 async def saveAssistantResponse(response: str, gpt: GPTData, conversations: list,pdf_id: str = None):
     # Log the response to database
@@ -1929,7 +1942,7 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     model_response = response.choices[0].message.content
     return response, model_response
 
-async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, use_case_config: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, prompts_template: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     pdf_id = None
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
     pdf_intent_conversation = [
@@ -1945,7 +1958,7 @@ async def do_post_response_processing(user_query: str, gpt: GPTData, model_confi
                                    conversations=pdf_intent_conversation, 
                                    model_configuration=model_configuration, 
                                    scenario="post_response", 
-                                   use_case_config=use_case_config,
+                                   prompts_template=prompts_template,
                                    web_search=web_search,
                                    socket_manager=socket_manager, 
                                    websocket=websocket)
@@ -1998,11 +2011,12 @@ def base64_to_image(base64_string: str, save_path=None, filename=None):
         logging.error(f"Error converting base64 to image: {e}", exc_info=True)
         return None, None
     
-async def get_model_configuration(use_case, USE_CASE_CONFIG: dict):
+async def construct_model_configuration(use_case, PROMPT_TEMPLATES: dict):
     model_configuration = DEFAULT_MODEL_CONFIGURATION
 
-    if use_case and use_case in USE_CASE_CONFIG:
-        model_configuration = USE_CASE_CONFIG[use_case]["model_configuration"]
+    # Mapping of use cases to role_information values
+    if use_case and use_case in PROMPT_TEMPLATES:
+        model_configuration = PROMPT_TEMPLATES[use_case]["model_configuration"]
 
     logger.info(f"Use_case: {use_case} \n Model Configuration: {model_configuration}")
     

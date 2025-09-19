@@ -6,7 +6,7 @@ import json
 import re
 import tiktoken
 
-from mongo_service import update_usecases, update_orders, create_usecase_for_document_search
+from mongo_service import update_usecases, update_orders, create_usecase_for_document_search,save_prompt_templates_to_db
 from azure_ai_search_utils import store_to_azure_ai_search
 from constants import ALLOWED_DOCUMENT_EXTENSIONS, ALLOWED_IMAGE_EXTENSIONS
 from DocIntell_utils import analyze_pdf_with_docintel
@@ -106,6 +106,10 @@ async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile]
                             # for usecase in usecases:
                             #     usecase['gpt_id'] = gpt.gpt_id
                             await update_usecases(gpt_id, usecases)
+
+                            #call save templates 
+                            await save_prompt_templates_to_db(gpt_id)
+
                             file_upload_status += f"File {uploadedFile.filename} processed and database updated successfully."
                     except Exception as e:
                         file_upload_status += f"Error processing file: {str(e)}"

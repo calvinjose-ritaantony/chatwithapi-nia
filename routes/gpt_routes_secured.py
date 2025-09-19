@@ -211,6 +211,10 @@ async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str, access_token
     #     logger.info("Unauthorized access attempt to WebSocket endpoint.")
     #     return
     
+    #*****************
+     #start timer
+    #*********************
+
     await socket_manager.connect(websocket, gpt_id)
     try:
         while True:
@@ -250,6 +254,10 @@ async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str, access_token
 
                 await socket_manager.send_json(payload, websocket)
                 logger.info(f"$$$$$$$$$$$$$$ WebSocket response sent: {json.dumps(payload, ensure_ascii=False)}")
+              
+ #*****************
+     #end timer -- add it in finally clause
+    #*********************
 
             except HTTPException as he:
                 logger.error(f"Error while getting response from Model. Details : \n {he.detail}", exc_info=True)
