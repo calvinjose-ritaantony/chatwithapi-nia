@@ -6,6 +6,9 @@ from pathlib import Path
 from bson import ObjectId
 import urllib.parse
 from typing import Annotated
+from typing import List
+
+# from auth_msal import azure_scheme
 
 from fastapi import APIRouter, Cookie, Query, Request, Security, UploadFile, Body, File, Form, HTTPException, Depends
 from fastapi import WebSocket, WebSocketDisconnect
@@ -31,6 +34,9 @@ from mongo_service import get_collection
 
 from bson import ObjectId
 from dotenv import load_dotenv
+from azure_ai_search_utils import fetch_unique_document_names
+from azure_ai_search_utils import search_within_documents_using_searchIn
+
 
 pdf_file_name = None
 
@@ -222,7 +228,7 @@ async def ws_chat(websocket: WebSocket, gpt_id: str, gpt_name: str, access_token
                 
                 logger.info(f"Chat request received with GPT ID: {gpt_name} \n user message: {user_message} \n params: {params}")
                 gpt = await get_gpt_by_id(gpt_id)
-                await socket_manager.send_json({"response": f"Chat request received with GPT ID: {gpt_name} <br> user message: {user_message}", "type": "thinking"}, websocket)
+                await socket_manager.send_json({"response": f"Chat request received with GPT ID: {gpt_name} user message: {user_message}", "type": "thinking"}, websocket)
 
                 model_configuration = ModelConfiguration(**params)
                 logger.info(f"Received GPT data: {gpt} \n Model Configuration: {model_configuration}")
@@ -331,8 +337,8 @@ async def update_instruction(request: Request, gpt_id: str, gpt_name: str, useca
 
     return response
 
-@router.put("/upload_document/{gpt_id}/{gpt_name}")
-async def upload_document_index(request: Request, gpt_id: str, gpt_name: str, user: Annotated[dict, Depends(azure_scheme)], files: list[UploadFile] = File(...)):
+@router.put("/upload_document/{gpt_id}/{gpt_name}/{isDocIntelligence}")
+async def upload_document_index(request: Request, gpt_id: str, gpt_name: str, isDocIntelligence: bool, user: Annotated[dict, Depends(azure_scheme)], shortDescription:str = Form(...) , files: list[UploadFile] = File(...)):
     logger.info(f"Updating GPT with ID: {gpt_id} Name: {gpt_name}")
     gpts_collection = await get_collection("gpts")
     gpt: GPTData = await gpts_collection.find_one({"_id": ObjectId(gpt_id)})
@@ -365,7 +371,7 @@ async def upload_document_index(request: Request, gpt_id: str, gpt_name: str, us
             file_upload_status = ""
 
             if gpt.use_rag:
-                file_upload_status = await handle_upload_files(gpt_id, gpt, files)
+                file_upload_status = await handle_upload_files(gpt_id, gpt, files,isDocIntelligence,shortDescription)
                 logger.info(f"RAG Files uploaded successfully: {file_upload_status}")
                 response = JSONResponse({"message": "Document Uploaded Successfully!", "gpt_name": gpt_name, "file_upload_status" : file_upload_status}, status_code=200)
                 
@@ -834,4 +840,50 @@ async def download_pdf_by_id(pdf_id: str):
     file_name = pdf_doc.get("file_name", "nia_response")
     output_path = await generate_pdf_from_text(pdf_content, f"{file_name}.pdf")
     return FileResponse(output_path, media_type="application/pdf", filename=f"{file_name}.pdf")
+
+@router.get("/document_names", summary="Get all unique document names from PDF and JSON indexes")
+async def get_document_names(user: Annotated[dict, Depends(azure_scheme)]):
+    """
+    Returns a sorted list of all unique document names from both PDF and JSON indexes.
+    Returns an empty list if fetch fails or returns None.
+    """
+    names = []  # initially empty
+
+    try:
+        fetched_names = await fetch_unique_document_names()
+        if fetched_names: 
+            names = fetched_names
+    except Exception as e:
+        print(f"Error fetching document names: {e}")
+        # names remains empty if exception occurs
+
+    return names
+
+
+
+
+
+@router.get("/by_documents", summary="Search within selected documents by names")
+async def search_by_documents(
+    user: Annotated[dict, Depends(azure_scheme)],
+    document_names: List[str] = Query(..., description="List of document names (PDF or JSON)"),
+    search_text: str = Query("*", description="Search text")
+):
+    try:
+        results = await search_within_documents_using_searchIn(document_names, search_text)
+    except Exception as e:
+        print(f"Search failed: {e}")
+        results = []
+
+    return results
+
+
+# @router.get("/by_document", summary="Search within a selected document by name")
+# async def search_by_document(
+#     user: Annotated[dict, Depends(azure_scheme)],
+#     document_name: str = Query(..., description="Name of the document (PDF title or JSON document_name)"),
+#     search_text: str = Query("*", description="Search text")
+# ):
+#     results = await search_within_document(document_name, search_text)
+#     return {"results": results}
 
