@@ -1,5 +1,6 @@
 import io
 from typing import Any, List
+import unicodedata
 
 from mongo_service import get_usecases_list
 
@@ -48,6 +49,8 @@ from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
 from mongo_service import save_pdf_content
+from fpdf import FPDF
+import re
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
@@ -197,14 +200,19 @@ async def get_data_from_web_search(search_query: str, gpt: GPTData, region: str 
 
     if usecase != "DEFAULT" and socket_manager is not None:
         logger.info(f"Performing Web Search  {usecase}")
-        await socket_manager.send_json({"response": f"Performing Web Search", "type": "thinking"}, websocket)
+        await socket_manager.send_json({"response": "Performing Web Search", "type": "thinking"}, websocket)
 
     if search_query is None or search_query.strip() == "":
         return search_summary
 
     try:
-        search_summary = await search_web_with_sonar(query=search_query)
+        search_summary, citations = await search_web_with_sonar(query=search_query)
         logger.info(f"Web Search Summary {search_summary}")
+
+        # Send the web search summary and citations to UI for thinking process update
+        if usecase != "DEFAULT" and socket_manager is not None:
+            await socket_manager.send_json({"response" : {"web_search_response" : search_summary, "citations" : citations}, "type": "web_search_context"}, websocket)
+
     except Exception as e:
         logger.error(f"Web search failed: {e}", exc_info=True)
 
@@ -461,7 +469,7 @@ async def handle_ratelimit_exception_stream(gpt: GPTData, model_configuration: M
                         )
                         yield full_response_content
 
-async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict,  role_information: str, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, use_case_config: dict,  role_information: str, web_search:bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     
     pdf_id = None
     
@@ -508,10 +516,10 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           use_case=use_case, 
                                           model_response=model_response, 
                                           use_case_config=use_case_config, 
+                                          web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)
 
-        
         if model_response is None or model_response == "":
             main_response = "No Response from Model. Please try again."
         else:            
@@ -531,6 +539,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           use_case=use_case, 
                                           model_response=model_response, 
                                           use_case_config=use_case_config, 
+                                          web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)     
 
@@ -546,6 +555,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           use_case=use_case, 
                                           model_response=model_response, 
                                           use_case_config=use_case_config, 
+                                          web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)      
         
@@ -562,7 +572,6 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         if socket_manager is not None:
             await socket_manager.send_json({"response" : f"Adding the conversation to memory", "type": "thinking"}, websocket)
             
-        
         await saveAssistantResponse(main_response, gpt, conversations, pdf_id)
         
     return {
@@ -835,23 +844,26 @@ async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, 
         logger.error(f"Error occurred while fetching model response: {e}", exc_info=True)
         return StreamingResponse(iter([str(e)]), media_type="text/event-stream")
     
-async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, USE_CASE_CONFIG: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, USE_CASE_CONFIG: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
 
     logger.info(f"USE_CASE : {use_case}")
     USER_PROMPT = USE_CASE_CONFIG[use_case]["user_message"]
     #logger.info(f"USE_CASE_CONFIG[{use_case}]: {USER_PROMPT}")
 
     #context_information, additional_context_information, conversations = await determineFunctionCalling(user_message, image_response, use_case, gpt, conversations, model_configuration, "pre_response")
-    context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(search_query=user_message, 
-                                                                                                                            image_response=image_response, 
-                                                                                                                            use_case=use_case, 
-                                                                                                                            gpt=gpt, 
-                                                                                                                            conversations=conversations, 
-                                                                                                                            model_configuration=model_configuration,
-                                                                                                                            scenario="pre_response",
-                                                                                                                            use_case_config=USE_CASE_CONFIG,
-                                                                                                                            socket_manager=socket_manager, 
-                                                                                                                            websocket=websocket)
+    context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(
+        search_query=user_message, 
+        image_response=image_response, 
+        use_case=use_case, 
+        gpt=gpt, 
+        conversations=conversations, 
+        model_configuration=model_configuration,
+        scenario="pre_response",
+        use_case_config=USE_CASE_CONFIG,
+        web_search=web_search,
+        socket_manager=socket_manager, 
+        websocket=websocket
+    )
     
     if web_search_results is None or web_search_results == "":
         web_search_results = "No Data from Web Search"
@@ -894,6 +906,8 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
 async def processImage(streaming_response: bool, save_response_to_db: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, conversations: list, uploadedImage: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     image_url = ""
     base64_image = ""
+    image_response = "No data found in image"
+
     try:
         if uploadedImage is not None and uploadedImage.filename != "blob" and uploadedImage.filename != "dummy":
             image_url = await store_to_blob_storage(uploadedImage)
@@ -944,17 +958,21 @@ async def processImage(streaming_response: bool, save_response_to_db: bool, user
 
             # 5. Call Azure OpenAI API for image analysis
             if streaming_response:
-                response = await analyzeImage_stream(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
+                image_response = await analyzeImage_stream(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
             else:
-                response = await analyzeImage_standard(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
+                image_response = await analyzeImage_standard(gpt, conversations, model_configuration, save_response_to_db, socket_manager=socket_manager,websocket=websocket)
 
-            logger.info(f"Image Response: {response}")
+            logger.info(f"Image Response: {image_response}")
+
+            # Send the image description and image name to UI for thinking process update
+            if await get_use_case(gpt) != "DEFAULT" and socket_manager is not None:
+                await socket_manager.send_json({"response" : {"image_response" : image_response, "image_name" : uploadedImage.filename}, "type": "image_context"}, websocket)
 
     except Exception as e:
         logger.error(f"Error occurred while processing image: {e}", exc_info=True)
-        response = str(e) # Return the error message as response
-    
-    return response
+        image_response = "No data found in image"
+
+    return image_response
 
 async def processResponse(response):
     total_tokens = response.usage.total_tokens
@@ -981,7 +999,7 @@ async def processResponse(response):
     return main_response, follow_up_questions, total_tokens
 
 async def generate_response(streaming_response: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, uploadedFile: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
-    has_image = False
+    has_image: bool = False
     previous_conversations_count = 6
     response = {
                     # "response": "No Response from model", 
@@ -990,12 +1008,12 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                     "follow_up_questions": [""],
                     "type": "chat_response"
                 }
-    proceed = False
-    web_search = True
-    model_name = gpt["name"]
-    use_rag = bool(gpt["use_rag"])
-    image_response = ""
+    proceed: bool = False
+    model_name: str = gpt["name"]
+    use_rag: bool = bool(gpt["use_rag"])
+    image_response: str = ""
     DEFAULT_IMAGE_RESPONSE = ""
+    web_search: bool = model_configuration.web_search
 
     gpt_id = str(gpt["_id"])
     USE_CASE_CONFIG = await update_use_case_config(gpt_id)
@@ -1004,6 +1022,10 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     use_case = await get_use_case(gpt)
     model_configuration = await get_model_configuration(use_case, USE_CASE_CONFIG) if use_rag else (model_configuration)
     model_configuration: ModelConfiguration = await construct_model_configuration(model_configuration)
+
+    # Due to last 2 lines, fetch model_configuration from USE_CASE_CONFIG the web search from UI gets lost. 
+    # So preserve and reset the value post the actual model configuration is fetched.
+    model_configuration.web_search = web_search
  
     # Fetch the thinking process for the selected use case
     if use_case != "DEFAULT":
@@ -1082,8 +1104,10 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             model_configuration=model_configuration,
             scenario="post_response",
             use_case_config=USE_CASE_CONFIG,
+            web_search=web_search,
             socket_manager=socket_manager, 
-            websocket=websocket)
+            websocket=websocket
+        )
            
         if web_search_results is None or web_search_results == "":
             web_search_results = "No Data from Web Search"
@@ -1117,11 +1141,32 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
  
         # Step 2 : Function Calling
         if image_response is not None and image_response.get("model_response") is not None and image_response.get("model_response") != "":
-            await preprocessForRAG(user_message, image_response.get("model_response"), use_case, gpt, conversations, model_configuration, USE_CASE_CONFIG, socket_manager, websocket)
+            await preprocessForRAG(
+                user_message=user_message, 
+                image_response=image_response.get("model_response"), 
+                use_case=use_case, 
+                gpt=gpt, 
+                conversations=conversations, 
+                model_configuration=model_configuration, 
+                USE_CASE_CONFIG=USE_CASE_CONFIG, 
+                web_search=web_search,
+                socket_manager=socket_manager, 
+                websocket=websocket)
     elif use_rag and not has_image:
         logger.info("CASE 3 : RAG and No Image")
         proceed = True
-        await preprocessForRAG(user_message, DEFAULT_IMAGE_RESPONSE, use_case, gpt, conversations, model_configuration, USE_CASE_CONFIG, socket_manager, websocket)
+        await preprocessForRAG(
+            user_message=user_message, 
+            image_response=DEFAULT_IMAGE_RESPONSE, 
+            use_case=use_case, 
+            gpt=gpt, 
+            conversations=conversations, 
+            model_configuration=model_configuration, 
+            USE_CASE_CONFIG=USE_CASE_CONFIG, 
+            web_search=web_search,
+            socket_manager=socket_manager, 
+            websocket=websocket
+        )
         conversations.append({"role": "user", "content": user_message})
     else:
         logger.info("CASE 4 : No RAG and No Image")
@@ -1150,12 +1195,31 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             await socket_manager.send_json({"response" : "Send Data to Model for Response Generation", "type": "thinking"}, websocket)
 
         if streaming_response:
-            response = await get_completion_from_messages_stream(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, websocket, socket_manager)
+            response = await get_completion_from_messages_stream(
+                user_query=user_message, 
+                gpt=gpt, 
+                model_configuration=model_configuration, 
+                conversations=conversations, 
+                use_case=use_case, 
+                use_case_config=USE_CASE_CONFIG, 
+                web_search=web_search, 
+                websocket=websocket, 
+                socket_manager=socket_manager)
         else:
-            if use_case != "DEFAULT":
+              if use_case != "DEFAULT":
                 pass
                 # await socket_manager.send_json({"response" : thinking_process_for_usecases[4], "type": "thinking"}, websocket)
-            response = await get_completion_from_messages_standard(user_message, gpt, model_configuration, conversations, use_case, USE_CASE_CONFIG, websocket, socket_manager)
+              response = await get_completion_from_messages_standard(
+                  user_query=user_message, 
+                  gpt=gpt, 
+                  model_configuration=model_configuration, 
+                  conversations=conversations, 
+                  use_case=use_case, 
+                  use_case_config=USE_CASE_CONFIG, 
+                  web_search=web_search, 
+                  websocket=websocket, 
+                  socket_manager=socket_manager
+              )
             logger.info(f"Response from model: {response}")
 
     # Sometimes model returns "null" which is not supported by python
@@ -1211,7 +1275,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
     use_cases = await get_usecases(gpt_id)
 
     if use_case != "DEFAULT"  and socket_manager is not None:
-        await socket_manager.send_json({"response": "Starting Azure Search for data...", "type": "thinking"}, websocket)
+        await socket_manager.send_json({"response": "Performing semantic fetch in Azure AI Search for context data...", "type": "thinking"}, websocket)
 
     # Extract the matching use case from the collection
     use_case_data = next((uc for uc in use_cases if uc["name"] == use_case), None)
@@ -1246,7 +1310,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         logger.info(f"Search Client: {azure_ai_search_client} \nSearch Query: {search_query}")
 
         # Get the documents
-        if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR":
+        if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR" or use_case == "NP_KNOWLEDGE_BASE":
             selected_fields = use_case_config[use_case]["fields_to_select"]
         else:
             selected_fields = ALL_FIELDS 
@@ -1296,6 +1360,10 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         # Serialize the results
         sources_formatted = json.dumps(results_list, default=lambda x: x.__dict__, indent=2)
         logger.info(f"Context Information: {sources_formatted}")
+
+        # Send the Azure AI Search results, search query to UI for thinking process update
+        if use_case != "DEFAULT"  and socket_manager is not None:
+            await socket_manager.send_json({"response" : {"ai_search_response" : sources_formatted, "search_text" : search_query}, "type": "ai_search_context"}, websocket)
         
     except Exception as e:
         sources_formatted = ""
@@ -1376,11 +1444,12 @@ async def summarize_conversations(chat_history, gpt):
 
     return conversation_summary
 
-async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, use_case_config: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     function_calling_conversations = []
     data = []
     additional_data = []
     web_search_results = None
+    has_web_search_executed = False
 
     deployment_name = gpt["name"]
     gpt_id: str = str(gpt["_id"]) 
@@ -1395,8 +1464,6 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
     
     if use_case == "TRACKING_ORDERS_TKE":
         search_query = search_query + "(TKE)"
-
-    
 
     # Get the tools and tool definitions
     tool_names, tool_definitions = await get_tools(gpt_id=gpt["_id"], use_case=use_case, scenario=scenario)
@@ -1480,13 +1547,14 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                     logger.info("write_response_to_pdf called")
                     function_args = json.loads(tool_call.function.arguments)
                     logger.info(f"[PDF INTENT] PDF tool called with args: {function_args}")
-                    data = await write_response_to_pdf(
+                    pdf_id = await write_response_to_pdf(
                         pdf_content=function_args.get("response_text", ""),
                         gpt=gpt,
                         file_name=function_args.get("file_name", "nia_response"),
                         socket_manager=socket_manager,
                         websocket=websocket  # Default file name if not provided
                     )
+                    data.append(pdf_id)
                 elif tool_call.function.name == "get_data_from_web_search":
                     logger.info("Calling get_data_from_web_search")
                     function_args = json.loads(tool_call.function.arguments)
@@ -1497,6 +1565,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         socket_manager=socket_manager,
                         websocket=websocket
                     )
+                    has_web_search_executed = True
                 else:
                     logger.info(f"Couldn't find tool {tool_call.function.name} in NIA. Kindly check the tool definition.s")
 
@@ -1510,6 +1579,21 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
             logger.info("Function calling END")
         else:
             logger.info("No tool calls were made by the model.")
+
+        # Call web search even if there are no tool calls if web search is enabled. 
+        # To avoid double call, Check if the web search is already done via function calling.
+        # Only if not invoked via function calling and web search is enabled in UI perform the operation
+        # In post response we must not call web_search
+        if web_search and not has_web_search_executed and scenario != "post_response":
+            logger.info("Executing web search for the query as web search is enabled")
+
+            web_search_results = await get_data_from_web_search(
+                    search_query=search_query,
+                    gpt=gpt,
+                    region="IN",
+                    socket_manager=socket_manager,
+                    websocket=websocket
+                )
 
     except RateLimitError as rle:
         logger.error(f"RateLimitError occurred while calling the function: {rle}", exc_info=True)
@@ -1592,35 +1676,35 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
         logger.info("Generating PDF for use case")
 
         if await get_use_case(gpt) != "DEFAULT" and socket_manager is not None:
-            await socket_manager.send_json({"response": "Generating the pdf...", "type": "thinking"}, websocket)
+            await socket_manager.send_json({"response": f"Generating the pdf...{file_name}", "type": "thinking"}, websocket)
             logger.info("Thinking message sent successfully")
             
-        parsed = None
-        if isinstance(pdf_content, str):
-            try:
-                parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
-            except Exception:
-                try:
-                    parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
-                except Exception:
-                    parsed = None
-        if parsed:
-            # Serialize to readable text
-            text = f"{parsed.title}\n\n{parsed.description}\n\n"
-            for block in parsed.blocks:
-                if block.block_type == "text":
-                    text += f"{block.title}\n{block.content}\n\n"
-                elif block.block_type == "table":
-                    text += f"{block.title}\n"
-                    text += "\t".join(block.headers) + "\n"
-                    for row in block.rows:
-                        text += "\t".join(row) + "\n"
-                    text += "\n"
-                elif block.block_type == "chart":
-                    text += f"{block.title} ({block.chart_type} chart)\n"
-                    text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
-            text += f"{parsed.closure}\n"
-            pdf_content = text
+        # parsed = None
+        # if isinstance(pdf_content, str):
+        #     try:
+        #         parsed = StructuredSpendingAnalysis.parse_raw(pdf_content)
+        #     except Exception:
+        #         try:
+        #             parsed = StructuredSpendingAnalysis.parse_obj(json._json.loads(pdf_content))
+        #         except Exception:
+        #             parsed = None
+        # if parsed:
+        #     # Serialize to readable text
+        #     text = f"{parsed.title}\n\n{parsed.description}\n\n"
+        #     for block in parsed.blocks:
+        #         if block.block_type == "text":
+        #             text += f"{block.title}\n{block.content}\n\n"
+        #         elif block.block_type == "table":
+        #             text += f"{block.title}\n"
+        #             text += "\t".join(block.headers) + "\n"
+        #             for row in block.rows:
+        #                 text += "\t".join(row) + "\n"
+        #             text += "\n"
+        #         elif block.block_type == "chart":
+        #             text += f"{block.title} ({block.chart_type} chart)\n"
+        #             text += f"X: {', '.join(block.x)}\nY: {', '.join(map(str, block.y))}\n\n"
+        #     text += f"{parsed.closure}\n"
+        #     pdf_content = text
 
         gpt_user = gpt["user"]
         pdf_id = await save_pdf_content(gpt_id=gpt["_id"], user=gpt_user, pdf_file_name=file_name, pdf_content=pdf_content)
@@ -1645,12 +1729,80 @@ async def write_response_to_pdf(pdf_content: str, gpt: GPTData, file_name: str =
     return pdf_id
 
 async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf") -> str:
-    pdf: FPDF = FPDF()
+    class PDF(FPDF):
+        def __init__(self):
+            super().__init__()
+            self.set_auto_page_break(auto=True, margin=15)
+            self.set_margins(20, 20, 20)  # left, top, right
+            self.margin_color = (200, 200, 200)  # light gray
+
+        def header(self):
+            # Draw margin highlight (rectangle)
+            self.set_draw_color(*self.margin_color)
+            self.rect(self.l_margin, self.t_margin, self.w - self.l_margin - self.r_margin, self.h - self.t_margin - self.b_margin)
+            self.set_draw_color(0, 0, 0)  # reset to black
+
+    def render_inline_bold(pdf, text, indent=False):
+        """
+        Print a line with **bold** text segments.
+        """
+        bold_pattern = re.compile(r"\*\*(.*?)\*\*")
+        parts = re.split(r"(\*\*.*?\*\*)", text)
+
+        for part in parts:
+            if part.startswith("**") and part.endswith("**"):
+                pdf.set_font("Helvetica", style="B", size=12)
+                pdf.write(8, part[2:-2])  # remove **
+            else:
+                pdf.set_font("Helvetica", size=12)
+                pdf.write(8, part)
+        pdf.ln(8 if not indent else 6)  # move to next line
+
+    def render_markdown(pdf, text):
+
+            bold_pattern = re.compile(r"\*\*(.*?)\*\*")
+            bullet_pattern = re.compile(r"^\s*[-*]\s+(.*)")
+
+            pdf.set_font("Helvetica", size=12)  # use built-in font
+            lines = text.split("\n")
+
+            for line in lines:
+                stripped = line.strip()
+
+                # Empty line → add spacing
+                if not stripped:
+                    pdf.ln(6)
+                    continue
+
+                bullet_match = bullet_pattern.match(line)
+                if bullet_match:
+                    # Handle bullet point
+                    content = bullet_match.group(1)
+
+                    # Add bullet symbol
+                    pdf.cell(5, 8, "-", ln=0)  # safe bullet
+                    pdf.set_x(pdf.get_x())  # reset X for text
+
+                    # Render text with bold support
+                    render_inline_bold(pdf, content, indent=True)
+
+                else:
+                    # Regular line with bold
+                    render_inline_bold(pdf, line)
+
+
+
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Arial", size=12)
-    for line in text.split('\n'):
-        pdf.cell(0, 10, txt=line, ln=1)
+    # Make sure ArialSans.ttf is present in the same directory as this script
+    def safe_text(s: str) -> str:
+    # Replace smart quotes, bullets, etc.
+        return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+
+    text = safe_text(text)
+    
+    render_markdown(pdf, text)
+
     # Get user's Documents folder
     documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
     nia_dir = os.path.join(documents_dir, "NIA")
@@ -1663,6 +1815,51 @@ async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf")
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     pdf.output(output_path)
     return output_path
+    # # Get user's Documents folder
+    # documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+    # nia_dir = os.path.join(documents_dir, "NIA")
+    # date_folder = datetime.datetime.now().strftime("%Y-%m-%d")
+    # output_dir = os.path.join(nia_dir, date_folder)
+    # os.makedirs(output_dir, exist_ok=True)
+
+    # # Always use the same filename, overwrite if exists
+    # output_path = os.path.join(output_dir, file_name)
+    # os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    # pdf.output(output_path)
+    # return output_path
+
+# async def generate_pdf_from_text(text: str, file_name: str = "nia_response.pdf") -> str:
+#     # Switch to fpdf2 which has better Unicode support
+#     from fpdf import FPDF
+    
+#     class PDF(FPDF):
+#         def __init__(self):
+#             super().__init__()
+#             #self.add_font('Arial', '', 'ArialSansCondensed.ttf', uni=True)
+    
+#     pdf = PDF()
+#     pdf.add_page()
+#     pdf.set_auto_page_break(auto=True, margin=15)
+    
+#     # Use a font with good Unicode support
+#     pdf.set_font("Arial", size=12)
+    
+#     for line in text.split('\n'):
+#         pdf.multi_cell(0, 10, txt=line)
+    
+#     # Get user's Documents folder
+#     documents_dir = os.path.join(os.path.expanduser("~"), "Documents")
+#     nia_dir = os.path.join(documents_dir, "NIA")
+#     date_folder = datetime.datetime.now().strftime("%Y-%m-%d")
+#     output_dir = os.path.join(nia_dir, date_folder)
+#     os.makedirs(output_dir, exist_ok=True)
+
+#     # Always use the same filename, overwrite if exists
+#     output_path = os.path.join(output_dir, file_name)
+#     os.makedirs(os.path.dirname(output_path), exist_ok=True)
+#     pdf.output(output_path)
+
+#     return output_path
     
 async def get_tools(gpt_id: str, use_case: str, scenario: str):
     tool_definitions = []
@@ -1732,7 +1929,7 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     model_response = response.choices[0].message.content
     return response, model_response
 
-async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, use_case_config: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, use_case_config: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     pdf_id = None
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
     pdf_intent_conversation = [
@@ -1749,6 +1946,7 @@ async def do_post_response_processing(user_query: str, gpt: GPTData, model_confi
                                    model_configuration=model_configuration, 
                                    scenario="post_response", 
                                    use_case_config=use_case_config,
+                                   web_search=web_search,
                                    socket_manager=socket_manager, 
                                    websocket=websocket)
     

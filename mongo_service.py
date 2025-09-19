@@ -376,7 +376,8 @@ async def update_message(message: dict):
         "created_at": date.datetime.now().isoformat(),
         "hiddenFlag" : False,
         "user": message["user"],
-        "use_case_id": message["use_case_id"]
+        "use_case_id": message["use_case_id"],
+        "pdf_id" : message.get("pdf_id", []) # Optional field for storing associated PDF IDs
     })
 
 async def update_system_message(gpt_id: str, system_message: str) -> UpdateResult:

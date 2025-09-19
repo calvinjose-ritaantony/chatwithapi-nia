@@ -1,11 +1,13 @@
 import json
 import logging
 import re
+import os
 
 from openai import AsyncAzureOpenAI
 from PromptValidationResult import PromptValidationResult
 from typing import Optional, Dict
 from azure_openai_utils import (GPT_4o_ENDPOINT_URL, GPT_4o_API_KEY, GPT_4o_API_VERSION, GPT_4o_MODEL_NAME)
+from data.refine_prompt_output import EvaluationDefinitions, RefinePromptOutput
 
 logger = logging.getLogger(__name__)
 
@@ -68,101 +70,44 @@ class PromptValidator:
             api_key=GPT_4o_API_KEY, 
             api_version=GPT_4o_API_VERSION)
         
-        response = await azure_openai_client.chat.completions.create(
-            model=GPT_4o_MODEL_NAME,
-            messages=conversations,
-            max_tokens=1200,  # Increased to accommodate justifications
-            temperature=temperature,
-            top_p=top_p,
-        )
+        # Retry logic for model call (similar to your reference)
+        response = None
+        retry_models = [GPT_4o_MODEL_NAME]
+        i = 1
+        while True:
+            model_env_var = f"GPT_RETRY_MODELS_{i}"
+            alt_model = os.getenv(model_env_var)
+            if not alt_model:
+                break
+            retry_models.append(alt_model)
+            i += 1
+
+        last_exception = None
+        for model_name in retry_models:
+            try:
+                response = await azure_openai_client.chat.completions.parse(
+                model=model_name,
+                messages=conversations,
+                max_tokens=1200,  # Increased to accommodate justifications
+                temperature=temperature,
+                top_p=top_p,
+                response_format=RefinePromptOutput
+            )
+                # If response is valid, break out of retry loop
+                if response and response.choices and response.choices[0].message.content:
+                    break
+            except Exception as ex:
+                logger.warning(f"Model '{model_name}' failed: {ex!s}", exc_info=True)
+                last_exception = ex
+            continue
+
+        if response is None or not response.choices or not response.choices[0].message.content:
+            logger.error("All models failed to return a valid response.")
+            raise last_exception if last_exception else ValueError("No valid response from any model.")
+
         
         model_response = response.choices[0].message.content
         return model_response
-
-    def extract_json_from_response(self, response: str) -> str:
-        """
-        Extract valid JSON from a potentially noisy LLM response.
-        Uses multiple strategies to find and validate JSON in the response.
-        """
-        if not response:
-            return "{}"
-            
-        # Try to find JSON between triple backticks first (common format)
-        json_match = re.search(r'```(?:json)?\s*({[\s\S]*?})\s*```', response)
-        if json_match:
-            potential_json = json_match.group(1)
-            try:
-                json.loads(potential_json)  # Validate it's proper JSON
-                return potential_json
-            except:
-                pass  # If invalid, continue to other methods
-                
-        # Try to find the outermost JSON object with balanced braces
-        stack = []
-        start_index = None
-        
-        for i, char in enumerate(response):
-            if char == '{':
-                if not stack:  # First opening brace
-                    start_index = i
-                stack.append('{')
-            elif char == '}':
-                if stack and stack[-1] == '{':
-                    stack.pop()
-                    if not stack:  # We've found a complete JSON object
-                        try:
-                            json_candidate = response[start_index:i+1]
-                            json.loads(json_candidate)  # Validate
-                            return json_candidate
-                        except:
-                            pass  # If invalid, continue searching
-
-        # If previous methods fail, try a more aggressive approach with regex
-        try:
-            # Look for any JSON-like structure with balanced braces
-            json_pattern = r'{(?:[^{}]|(?R))*}'
-            matches = re.findall(r'{.*}', response, re.DOTALL)
-            
-            # Try each match from longest to shortest
-            for match in sorted(matches, key=len, reverse=True):
-                try:
-                    # Clean up common issues in LLM outputs
-                    cleaned_json = self._clean_json_string(match)
-                    json.loads(cleaned_json)
-                    return cleaned_json
-                except:
-                    continue
-        except:
-            pass
-            
-        # Last resort: if JSON validation fails, return a minimal valid JSON
-        logger.warning("Could not extract valid JSON from LLM response. Using fallback format.")
-        return '{"error": "Could not parse valid JSON from response"}'
-        
-    def _clean_json_string(self, json_str):
-        """Helper method to clean common JSON formatting issues in LLM outputs"""
-        # Remove trailing commas before closing braces/brackets
-        json_str = re.sub(r',\s*}', '}', json_str)
-        json_str = re.sub(r',\s*]', ']', json_str)
-        
-        # Fix missing quotes around keys
-        json_str = re.sub(r'([{,])\s*([a-zA-Z0-9_]+)\s*:', r'\1"\2":', json_str)
-        
-        # Fix single quotes used instead of double quotes
-        in_string = False
-        result = []
-        i = 0
-        while i < len(json_str):
-            if json_str[i] == '"':
-                in_string = not in_string
-            elif json_str[i] == "'" and not in_string:
-                result.append('"')
-                i += 1
-                continue
-            result.append(json_str[i])
-            i += 1
-        
-        return ''.join(result)
     
     async def process_prompt_optimized(self, prompt: str, system_prompt: Optional[str] = None) -> PromptValidationResult:
         """
@@ -179,119 +124,42 @@ class PromptValidator:
         if not prompt or not prompt.strip():
             raise ValueError("Prompt cannot be empty")
         
-        # Define parameter descriptions for clear analysis
-        parameter_descriptions = {
-            "task_definition": "Clearly defines the task or goal to be accomplished",
-            "output_format": "Specifies the expected format and structure of the output",
-            "scope_and_constraints": "Establishes clear boundaries and limitations for the task",
-            "input_data": "Provides necessary context or data inputs needed for the task",
-            "clarity_check": "Ensures instructions are unambiguous and easily understood",
-            "example_inclusion": "Includes examples to demonstrate desired outputs or approaches",
-            "edge_case_handling": "Addresses potential edge cases or unexpected scenarios",
-            "tone_and_persona": "Specifies the desired communication style and personality",
-            "ethical_guardrails": "Provides guidance to ensure ethical and responsible outputs",
-            "performance_optimization": "Includes hints for efficiency or computational considerations",
-            "testability": "Includes criteria for evaluating the success of the response",
-            "domain_relevance": "Ensures contextual alignment with the domain or field of application"
-        }
-
-        evaluation_definitions = {
-                "task_definition": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "output_format": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "scope_and_constraints": {
-                    "adherence": "true or false", 
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "input_data": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "clarity_check": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "example_inclusion": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "edge_case_handling": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "tone_and_persona": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "ethical_guardrails": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "performance_optimization": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "testability": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                },
-                "domain_relevance": {
-                    "adherence": "true or false",
-                    "justification": "detailed reasoning for the evaluation"
-                }
-            }
-        
         # Create the evaluation and refinement instruction
         refinement_instruction = f"""
-        As an expert prompt engineer, analyze the following prompt and provide a detailed evaluation and refinement.
+        As an expert prompt engineer, analyze the given prompt and provide a detailed evaluation and enhanced refinement of the given prompt. Follow the steps diligently to generate the final response.
+
+        - Step 1: UNDERSTANDING THE CONTEXT AND INTENT
+        Carefully read the provided system and user prompts to fully grasp the context, objectives, and intended outcomes.
+        Identify any implicit goals or requirements that may not be explicitly stated.
         
-        # PART 1: ANALYSIS
-        Analyze the prompt against these criteria:
-        {json.dumps(parameter_descriptions, indent=2)}
+        - Step 2 : ANALYSIS
+        Analyze the prompt against the parameters provided in EvaluationDefinitions class. 
         
-        # PART 2: EVALUATION
-        Evaluate the prompt against these parameters with detailed justification for each parameter.
+        - Step 3:  EVALUATION
+        Evaluate the prompt against the parameters in EvaluationDefinitions class and generate EvaluationItem class with detailed justification, adherence for each parameter.
         
-        # PART 3: REFINEMENT
+        # Step 4: REFINEMENT
         Determine prompt complexity (simple or complex), whether it needs refinement, and if so, provide detailed recommendations.
-        If the system prompt contains information that should be moved from the user prompt, make this transfer in your refinement.
         
         # PART 4: PROMPT ENGINEERING
-        Create a refined version of the prompt that addresses all identified issues, optimizes parameter adherence, and maintains the original intent.
-        If appropriate, move details from the user prompt to the system prompt based on best practices.
-        
+        Create a refined version of the prompt that addresses all identified issues, optimizes parameter adherence, and maintains the original intent. Ensure the refined prompt is clear, specific, and actionable.  
+              
         # PART 5: COMPARATIVE EVALUATION
         Re-evaluate the refined prompt against the same parameters to demonstrate improvements.
         
         # INPUTS
         System prompt: {system_prompt or 'None'}
         User prompt: {prompt}
-        Evaluation parameters: {evaluation_definitions}
-        
-        # OUTPUT FORMAT
-        Return your analysis in this exact JSON format (do not include any explanation text outside the JSON):
-        {{
-            "title": "Provide a two word concise title for the analysis eg: 'Cross-sell Campaign' for a prompt 'Generate a follow-up email for customers who purchased the Logitech 4K Webcam, offering complementary accessories.'",
-            "pre_evaluation": "use the evaluation definitions to evaluate the original prompt",
-            "complexity_assessment": "simple or complex",
-            "needs_refinement": "true or false",
-            "refinement_reason": "detailed explanation of why refinement is or isn't needed",
-            "refined_prompt": "optimized user prompt",
-            "post_evaluation": "use the evaluation definitions to evaluate the refined prompt",
-        }}
+
         """
         
         # Call the LLM with the full analysis instruction
         try:
-            analysis_response = await self.call_llm(refinement_instruction, temperature=0.2)
+            analysis_response = await self.call_llm(refinement_instruction, temperature=0.2, top_p=0.95)
             logger.info(f"LLM Analysis Response: {analysis_response}")
-            analysis_json = self.extract_json_from_response(analysis_response)
-            data = json.loads(analysis_json)
+            # analysis_json = self.extract_json_from_response(analysis_response)
+            data = json.loads(analysis_response)
+            logger.info(f"Parsed Analysis Data: {data}")
             
             # Extract adherence values for pre-evaluation
             pre_evaluation_result = data.get("pre_evaluation", {})
@@ -299,7 +167,7 @@ class PromptValidator:
             title_result = data.get("title", "Simple Prompt")
             
             # Extract refined prompt (use original if refinement was not needed)
-            needs_refinement = data.get("needs_refinement", "false").lower() == "true"
+            needs_refinement = data.get("needs_refinement", "false")
             refined_prompt = data.get("refined_prompt", prompt) if needs_refinement else prompt
             
             # Create and return the validation result with justifications

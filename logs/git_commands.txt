@@ -156,8 +156,6 @@ git pull origin main
 git checkout feature-branch
 git rebase main
 
-
-
 Issue: local main branch doesn't match with remote main branch.
 Issue Details : have created separate branch for a feature.Now want to switch to main branch and take the latest changes. 
 #I have switched to main branch and while trying to pull the changes its showing to push and merge 2 commits which i have not commited.

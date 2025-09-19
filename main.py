@@ -94,7 +94,9 @@ origins = [
             "https://niaapp.azurewebsites.net",
             "https://niaapp.azurewebsites.net:443"
             "https://niaapp2.azurewebsites.net",
-            "https://niaapp2.azurewebsites.net:443"
+            "https://niaapp2.azurewebsites.net:443",
+            "https://chatwithnia.azurewebsites.net",
+            "https://chatwithnia.azurewebsites.net:443"
           ]
 
 middleware = [

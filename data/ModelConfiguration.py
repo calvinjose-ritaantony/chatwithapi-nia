@@ -6,3 +6,4 @@ class ModelConfiguration(BaseModel):
     top_p: float = 1
     frequency_penalty: float = 0
     presence_penalty: float = 0
+    web_search: bool = False
