@@ -114,7 +114,7 @@ async def delete_rag_use_case(gpt_id: str = None):
     
     return is_deleted
 
-async def create_usecase_for_document_search(gpt_id: str, use_case_name: str, index_name: str, semantic_configuration_name: str):
+async def create_usecase_for_document_search(gpt_id: str, use_case_name: str, index_name: str, semantic_configuration_name: str,field_to_select: list[str]):
     usecases_collection = await get_collection("usecases")
     gpts_collection = await get_collection("usecases")
 
@@ -141,7 +141,7 @@ async def create_usecase_for_document_search(gpt_id: str, use_case_name: str, in
         "index_name": index_name,
         "semantic_configuration_name": semantic_configuration_name,
         "user_message": "You are an AI document analysis assistant specialized in retrieving precise information from technical documentation.\n\nCONTEXT: The user is asking: \"{query}\"\n\nTASK: Provide a well-structured response based solely on the retrieved documentation.\n\nREASONING STEPS:\n1. Analyze what specific information the user is seeking\n2. Determine if this is a follow-up to previous conversation\n3. Determine if the user is asking for specific insights with query, only then use the data provided in \"RETRIEVED ADDITIONAL DATA\" section. Else simple ignore the \"RETRIEVED ADDITIONAL DATA\" section while generating response.\n4. Locate the most relevant sections in the retrieved documentation\n5. Assess if the documentation fully answers the query\n6. Consider what format would present this information most clearly\n7. Determine if clarification is needed for ambiguous queries\n8. Generate multiple responses, then evaluate each one for consistency and alignment with the original query and any provided context. If a response is unsatisfactory, regenerate it before returning it to the user. Continue this process until a satisfactory response is generated\n\nRETRIEVED DATA:\n{sources}\n\nWEB SEARCH RESULTS:\n{web_search_results}\n\nRETRIEVED ADDITIONAL DATA:\n{additional_sources}\n\nFORMAT YOUR RESPONSE:\n- Begin by directly addressing the user's question\n- Structure your response in a clear, professional format\n- Reference specific sections or keywords from the documentation\n- For multi-part queries, organize with appropriate headers or numbering\n- If the documentation is insufficient to answer fully, acknowledge limitations\n- For ambiguous queries, ask clarifying questions\n- Present information in the user's preferred format when specified\n\nRemember to base your response solely on the provided documentation without adding external information.\n",
-        "fields_to_select": ["title", "chunk"],
+        "fields_to_select": field_to_select,#[ "content", "headings", "subheadings", "footers"],# ["title", "chunk"],
         "document_count": 5,
         "role_information": "AI Document Analysis Agent",
         "model_configuration": {

@@ -981,7 +981,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const showLogsButton = document.getElementById('showLogs');
     showLogsButton.addEventListener('click', () => {
-      fetch('/logs')
+      fetch('/backend/logs')
           .then(response => {
               if (!response.ok) {
                   handleErrors(response);

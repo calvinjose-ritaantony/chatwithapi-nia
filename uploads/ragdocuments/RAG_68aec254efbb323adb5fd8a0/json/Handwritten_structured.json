@@ -1,0 +1,1063 @@
+[
+    {
+        "documentName": "Handwritten.json",
+        "pageNumber": 1,
+        "handwrittenContent": true,
+        "content": "Introduction to Cloud Providers The cloud computing industry is dominated by three major players. amazon Web Services (and) Microsoft azure, and Google Cloud Platform (ACP). Uns, the oldest and most mature provider, offers the widest range of services and global infrastructure, making it the default choice for many enterprises. Microsoft azure, tightly integrated with Windows Server, active Directory, and Office 365, is the preferred option for organizations deeply embedded in the Microsoft ecosystem Google Cloud, while newer, excels in data analytics, machine learning, and Kubernetes management, attracting businesses focused on cutting-edge at and open source technologies. When comparing these providers, key factors include compute performance, pricing models, at/ML capabilities, global reach, and compliance standards.",
+        "headings": [],
+        "subheadings": [],
+        "footers": [],
+        "tables": [],
+        "figures": [
+            {
+                "caption": "Extracted raw image 1 from page 1",
+                "caption_paragraphs": [],
+                "elements": [],
+                "description": "The image contains a handwritten text titled \"Introduction to Cloud Providers,\" written in neat, cursive handwriting. The background is light gray, with dark blue ink for the text. The content discusses the major players in the cloud computing industry and their distinguishing features.\n\n1. **Content Summary**:\n   - **Overview of the industry**:\n     The cloud computing industry is described as being dominated by three major providers: Amazon Web Services (AWS), Microsoft Azure, and Google Cloud Platform (GCP).\n     \n   - **AWS**:\n     AWS is identified as the oldest and most mature provider in the cloud market. It is noted for offering the widest range of services and global infrastructure. AWS is described as the \"default choice\" for many enterprises due to its extensive feature set and maturity.\n\n   - **Microsoft Azure**:\n     Microsoft Azure is highlighted as being tightly integrated with Windows Server, Active Directory, and Office 365. It is considered the preferred cloud option for organizations already embedded in Microsoft's ecosystem.\n\n   - **Google Cloud Platform**:\n     GCP is recognized as a newer entrant compared to AWS and Azure. However, it is acknowledged for its strengths in data analytics, machine learning, and Kubernetes management. GCP is aimed at businesses focusing on cutting-edge AI capabilities and open-source technologies.\n\n   - **Comparison Factors**:\n     Key factors for evaluating these providers include compute performance, pricing models, AI/ML capabilities, global reach, and compliance standards.\n\n2. **Visual Features**:\n   - The handwritten text is consistent and easy to read, with clear line spacing.\n   - The heading \"Introduction to Cloud Providers\" stands out due to its bold cursive styling.\n   - No charts, graphs, or diagrams are present in the image. It is purely textual.\n\n3. **Observations**:\n   - The tone is informative and comparative, presenting the strengths of each cloud provider without bias.\n   - No numerical trends, data points, or projections are mentioned.\n   \n4. **Purpose**:\n   - The text serves as an introductory overview, giving readers a concise yet insightful understanding of the three dominant cloud providers and considerations for choosing between them.\n\nIn conclusion, the image is a simple textual write-up that explains the competitive space of cloud computing providers, emphasizing AWS's maturity, Azure's integration with the Microsoft ecosystem, and GCP's expertise in advanced analytics and AI/ML technologies.",
+                "image_file": "Images\\pymupdf_page1_fig1.jpeg",
+                "method": "pymupdf"
+            }
+        ],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "Handwritten.json",
+        "pageNumber": 2,
+        "handwrittenContent": true,
+        "content": "compute services AWS provides Elastic compute cloud (EC2) for virtual machines, offering the most instance types and customization options, including GPU-optimized and bare-metal servers. Azure's equivalent, Azure Virtual Machines, integrates seamlessly with Microsoft software like SQL Server and Share Point , making it ideal for hybrid cloud deployments. Google cloud's compute Engine stands out with features like live VM migration and per-second billing. For serverless computing, AWS Lambda leads in event-driven workloads, while Azure functions benefits from native ties to Power Automate and Logic Apps. Google's cloud functions is the simplest to deploy but has fewer integrations. In container orchestration, AWS Elastic Kubernetes Service (EKS), Azure Kubernetes Service (AKS), and Google Kubernetes Engine (GKE) are competitive, though GKE is often praised for its simplicity and automation.",
+        "headings": [],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 27,
+                "columnCount": 2,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "compute services",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "AWS provides Elastic compute cloud (EC2) for virtual machines,",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "offering the most instance types and customization options, including",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "GPU-optimized and bare-metal servers. Azure's equivalent, Azure",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "Virtual Machines, integrates seamlessly with Microsoft software like SQL Server and Share Point , making it ideal for hybrid cloud deployments. Google cloud's compute Engine stands out with features",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 7,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 8,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 8,
+                        "columnIndex": 1,
+                        "content": "like live VM migration and per-second billing. For serverless",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 9,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 9,
+                        "columnIndex": 1,
+                        "content": "computing, AWS Lambda leads in event-driven workloads, while",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 10,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 10,
+                        "columnIndex": 1,
+                        "content": "Azure functions benefits from native ties to Power Automate and",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 11,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 11,
+                        "columnIndex": 1,
+                        "content": "Logic Apps. Google's cloud functions is the simplest to deploy but",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 12,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 12,
+                        "columnIndex": 1,
+                        "content": "has fewer integrations. In container orchestration, AWS Elastic",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 13,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 13,
+                        "columnIndex": 1,
+                        "content": "Kubernetes Service (EKS), Azure Kubernetes Service (AKS), and",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 14,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 14,
+                        "columnIndex": 1,
+                        "content": "Google Kubernetes Engine (GKE) are competitive, though GKE is",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 15,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 15,
+                        "columnIndex": 1,
+                        "content": "often praised for its simplicity and automation.",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 16,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 16,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 17,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 17,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 18,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 18,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 19,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 19,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 20,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 20,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 21,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 21,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 22,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 22,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 23,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 23,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 24,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 24,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 25,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 25,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 26,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 26,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [
+            {
+                "caption": "Extracted raw image 1 from page 2",
+                "caption_paragraphs": [],
+                "elements": [],
+                "description": "The image is a handwritten textual note titled \"Compute Services\" written on lined paper. The note provides a detailed analysis of various cloud computing services offered by leading platforms such as AWS, Azure, and Google Cloud. Below is an analysis outline based on the content:\n\nTitle: Compute Services\n\nContent Description:\n- **AWS Elastic Compute Cloud (EC2)**: AWS provides EC2 for virtual machines, emphasizing its rich variety of instance types and customization options. Unique features include GPU-optimized and bare-metal servers.\n- **Azure Virtual Machines**: Azure’s equivalent integrates seamlessly with Microsoft software like SQL Server and SharePoint, making it suitable for hybrid cloud deployments.\n- **Google Cloud Compute Engine**: Google Cloud is noted for leveraging features like live VM migration and per-second billing for its virtual machine service.\n  \nServerless Computing:\n- **AWS Lambda**: AWS’s serverless solution is highlighted for its strength in handling event-driven workloads.\n- **Azure Functions**: Benefits from close integration with Microsoft tools like Power Automate and Logic Apps.\n- **Google Cloud Functions**: While simpler to deploy, it is less integrated compared to its competitors.\n\nContainer Orchestration:\n- **AWS Elastic Kubernetes Service (EKS)**, **Azure Kubernetes Service (AKS)**, and **Google Kubernetes Engine (GKE)** are mentioned as competitive offerings. GKE receives special recognition for its simplicity and automation features.\n\nFormat and Structure:\nThis image features neatly spaced text written in blue ink on notebook-style lined paper. The handwriting is legible, slightly cursive in style, and does not feature any diagrams, charts, or graphs. Each paragraph is labeled or grouped based on the topic discussed to provide clear categorization.\n\nKey Observations:\n- The focus of the content revolves around comparing popular cloud computing services.\n- The handwritten note specifically highlights the strengths and competitive features of the platforms.\n- There is no numeric data, charts, visual aids, or statistical graphical representation in the image.\n\nRelationships and Comparisons:\nThe handwritten content systematically categorizes and compares services based on virtual machines, serverless computing, and container orchestration. Moreover, AWS, Azure, and Google Cloud are evaluated against one another for their features, capabilities, and user benefits.\n\nNo trends or projections are present as the content is descriptive, not statistical or graphical. There is no shading, highlighting, or use of colors other than the blue ink used for writing.",
+                "image_file": "Images\\pymupdf_page2_fig1.jpeg",
+                "method": "pymupdf"
+            }
+        ],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "Handwritten.json",
+        "pageNumber": 3,
+        "handwrittenContent": true,
+        "content": "Storage Solutions AWS Simple Storage Service (53) is the industry Standard for object storage, with unmatched durability and a vast ecosystem of third-party tools. Azure Blob storage competes closely, offering cool and archive tiers at slightly lower prices, plus native integration with Azure Data Lake for analytics. Google Cloud Storage provides uniform latency across regions and strong consistency. For block storage, AWS Elastic Block Store EBS) supports high-throughput workloads like databases, while Azure Disks includes unique features like disk bursting. Google Persistent Disk offers better performance consistency for random I/O Operations. In archival Storage, AWS Glacier is the most cost- effective but has slower retrieval times compared to Azure Archive Storage and Google Coldline, which prioritize faster access.",
+        "headings": [],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 26,
+                "columnCount": 2,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Storage Solutions",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "AWS Simple Storage Service (53) is the",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "industry Standard for object storage,",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "with unmatched durability and a vast",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 1,
+                        "content": "ecosystem of third-party tools. Azure",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 7,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 7,
+                        "columnIndex": 1,
+                        "content": "Blob storage competes closely, offering",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 8,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 8,
+                        "columnIndex": 1,
+                        "content": "cool and archive tiers at slightly lower",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 9,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 9,
+                        "columnIndex": 1,
+                        "content": "prices, plus native integration with",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 10,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 10,
+                        "columnIndex": 1,
+                        "content": "Azure Data Lake for analytics. Google",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 11,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 11,
+                        "columnIndex": 1,
+                        "content": "Cloud Storage provides uniform latency",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 12,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 12,
+                        "columnIndex": 1,
+                        "content": "across regions and strong consistency. For",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 13,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 13,
+                        "columnIndex": 1,
+                        "content": "block storage, AWS Elastic Block Store",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 14,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 14,
+                        "columnIndex": 1,
+                        "content": ":selected: EBS) supports high-throughput",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 15,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 15,
+                        "columnIndex": 1,
+                        "content": "workloads like databases, while Azure",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 16,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 16,
+                        "columnIndex": 1,
+                        "content": "Disks includes unique features like disk",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 17,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 17,
+                        "columnIndex": 1,
+                        "content": "bursting. Google Persistent Disk offers",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 18,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 18,
+                        "columnIndex": 1,
+                        "content": "better performance consistency for",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 19,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 19,
+                        "columnIndex": 1,
+                        "content": "random I/O Operations. In archival",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 20,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 20,
+                        "columnIndex": 1,
+                        "content": "Storage, AWS Glacier is the most cost-",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 21,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 21,
+                        "columnIndex": 1,
+                        "content": "effective but has slower retrieval times",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 22,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 22,
+                        "columnIndex": 1,
+                        "content": "compared to Azure Archive Storage and",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 23,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 23,
+                        "columnIndex": 1,
+                        "content": "Google Coldline, which prioritize faster",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 24,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 24,
+                        "columnIndex": 1,
+                        "content": "access.",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 25,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 25,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [
+            {
+                "caption": "Extracted raw image 1 from page 3",
+                "caption_paragraphs": [],
+                "elements": [],
+                "description": "The image is a handwritten note titled \"Storage Solutions,\" written on lined paper in a neat, cursive-like style using blue ink. The text describes various cloud storage solutions provided by major cloud service providers including AWS, Azure, and Google Cloud, while comparing their features across several storage types such as object storage, block storage, and archival storage.\n\n1. **Title**:\n   - The header reads \"Storage Solutions,\" written in larger, slightly stylized text for emphasis.\n\n2. **Content Description**:\n   - **Object Storage**:\n     - AWS Simple Storage Service (S3) is identified as the industry standard for object storage. It is highlighted for its unmatched durability and extensive ecosystem of third-party tools.\n     - Azure Blob Storage is noted to compete closely with AWS S3. It offers cool and archive storage tiers at slightly lower prices and includes native integration with Azure Data Lake for analytics.\n     - Google Cloud Storage provides uniform latency across regions and strong consistency.\n\n   - **Block Storage**:\n     - AWS Elastic Block Store (EBS) is detailed as offering high-throughput workloads suitable for databases.\n     - Azure Disks include unique features like disk bursting (an optimization for performance during peak workloads).\n     - Google Persistent Disk is identified as offering better performance consistency for random I/O operations.\n\n   - **Archival Storage**:\n     - AWS Glacier is labeled as the most cost-effective option but has slower retrieval times.\n     - Azure Archive Storage and Google Coldline are highlighted as prioritizing faster access compared to AWS Glacier.\n\n3. **Styling and Visual Elements**:\n   - Key terms, company names (e.g., AWS, Azure, Google), and technologies (e.g., S3, EBS, Azure Disks) are either written fully or abbreviated, with acronyms encircled for emphasis.\n   - No diagrams, graphs, or charts are present—this is purely text-based information written in a decorative format resembling personal notes.\n\n4. **Relationships and Comparisons**:\n   - AWS is portrayed as a leader in multiple categories (object storage, block storage, and archival storage) due to durability, throughput, and cost-effectiveness, but Azure and Google Cloud offer competitive alternatives, some of which specialize in analytics or faster access speeds.\n\n5. **Trends/Patterns**:\n   - Each cloud storage provider appears to focus on distinct advantages (durability, integration, cost-effectiveness, performance consistency), ensuring variability for users based on deployment needs (",
+                "image_file": "Images\\pymupdf_page3_fig1.jpeg",
+                "method": "pymupdf"
+            }
+        ],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "Handwritten.json",
+        "pageNumber": 4,
+        "handwrittenContent": true,
+        "content": "Networking Capabilities AWS boasts the most extensive global network with 24+ geographic regions, enabling low latency deployments worldwide, Its Virtual Private Cloud (VPC) allows granular security controls, and Direct Connect provides dedicated private links to AWS data centers. Azure's networking shines with Virtual Network (VNet), which simplifies hybrid cloud setups via Express Route, and Azure Front Door for global load balancing. Google Cloud's Premium Tier Network leverages Google's private fiber- optic backbone, offering predictable performance and lower latency than AWS or Azure for certain regions. All three providers support IPV6, DDOS protection, and CDN services (Cloudfront for AWS, Azure CDN, and Cloud CDN for GCP), though AWS has the edge in edge locations.",
+        "headings": [],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 26,
+                "columnCount": 2,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Networking Capabilities",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "AWS boasts the most extensive global",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "network with 24+ geographic regions,",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "enabling low latency deployments",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "worldwide, Its Virtual Private Cloud",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 1,
+                        "content": "(VPC) allows granular security",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 7,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 7,
+                        "columnIndex": 1,
+                        "content": "controls, and Direct Connect provides",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 8,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 8,
+                        "columnIndex": 1,
+                        "content": "dedicated private links to AWS data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 9,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 9,
+                        "columnIndex": 1,
+                        "content": "centers. Azure's networking shines with",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 10,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 10,
+                        "columnIndex": 1,
+                        "content": "Virtual Network (VNet), which simplifies",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 11,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 11,
+                        "columnIndex": 1,
+                        "content": "hybrid cloud setups via Express Route,",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 12,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 12,
+                        "columnIndex": 1,
+                        "content": "and Azure Front Door for global load",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 13,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 13,
+                        "columnIndex": 1,
+                        "content": "balancing. Google Cloud's Premium Tier",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 14,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 14,
+                        "columnIndex": 1,
+                        "content": "Network leverages Google's private fiber- optic backbone, offering predictable",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 15,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 16,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 16,
+                        "columnIndex": 1,
+                        "content": "performance and lower latency than",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 17,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 17,
+                        "columnIndex": 1,
+                        "content": "AWS or Azure for certain regions. All",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 18,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 18,
+                        "columnIndex": 1,
+                        "content": "three providers support IPV6, DDOS",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 19,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 19,
+                        "columnIndex": 1,
+                        "content": "protection, and CDN services",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 20,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 20,
+                        "columnIndex": 1,
+                        "content": "(Cloudfront for AWS, Azure CDN, and",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 21,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 21,
+                        "columnIndex": 1,
+                        "content": "Cloud CDN for GCP), though AWS has",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 22,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 22,
+                        "columnIndex": 1,
+                        "content": "the edge in edge locations.",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 23,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 23,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 24,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 24,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 25,
+                        "columnIndex": 0,
+                        "content": "",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 25,
+                        "columnIndex": 1,
+                        "content": "",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [
+            {
+                "caption": "Extracted raw image 1 from page 4",
+                "caption_paragraphs": [],
+                "elements": [],
+                "description": "The image contains handwritten text on lined paper titled \"Networking Capabilities.\" Below is a detailed textual analysis of the content within the image.\n\n---\n\n**Header: Networking Capabilities**  \nThe handwriting uses a bolded or slightly darkened script for the title, making it stand out from the rest of the text. The header is written in cursive handwriting, and it appears prominently at the top of the page.\n\n**Main Text Analysis:**  \n1. **AWS (Amazon Web Services):**\n   - AWS is described as having \"the most extensive global network,\" spread across 24 geographic regions.\n   - This network enables low-latency deployments worldwide.\n   - AWS’s networking features include:\n     - **Virtual Private Cloud (VPC):** Allows granular security controls.\n     - **Direct Connect:** Provides dedicated private links to AWS data centers, offering secure and efficient connectivity.\n\n2. **Azure (Microsoft Azure):**\n   - Azure networking capabilities are highlighted through:\n     - **Virtual Network (VNet):** Simplifies hybrid cloud setups.\n     - **ExpressRoute:** Facilitates private connections for businesses.\n     - **Azure Front Door:** Supports global load balancing for applications deployed in Azure’s infrastructure.\n\n3. **Google Cloud Platform (GCP):**\n   - The Google Cloud networking solution is promoted under its **Premium Tier Network:**\n     - Leverages Google's private fiber-optic backbone to provide predictable performance and lower latency than AWS or Azure in certain regions.\n\n4. **Shared Features across AWS, Azure, and GCP:**  \n   - All three cloud providers support:\n     - IPv4 (Internet Protocol version 4) compatibility.\n     - **DDoS protection:** Systems to combat distributed denial-of-service attacks.\n     - **CDN Services (Content Delivery Networks):**\n       - **CloudFront for AWS**\n       - **Azure CDN**\n       - **Cloud CDN for GCP**\n\n5. **Performance Comparison:**  \n   - AWS is noted to have the \"edge in edge locations,\" suggesting it outperforms Azure or GCP in deploying services closer to users for faster access.\n\n**Writing Style and Visual Elements:**\n- The handwriting is neat and legible, with a consistent slant and spacing between lines.\n- It appears to flow naturally, with a cursive and slightly informal style resembling handwritten notes intended for quick reference or summarization.\n- The text spans the majority of the page in orderly alignment.\n- No diagrams, charts, or other figures are included",
+                "image_file": "Images\\pymupdf_page4_fig1.jpeg",
+                "method": "pymupdf"
+            }
+        ],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "Handwritten.json",
+        "pageNumber": 5,
+        "handwrittenContent": true,
+        "content": "Databases AWS provides the most diverse database portfolio, including RDS for relational databases, DynamoDB for NoSQL, and Redshift for data warehousing. Azure's SQL Database is a top choice for Microsoft shops, with Cosmos DB offering multi-model support and SLA-backed latency under 10ms. Google's Cloud Spanner is unique for horizontally scalable relational databases, while BigQuery dominates serverless analytics. For open-source databases, AWS Aurora (MySQL/PostgreSQL-compatible) outperforms Azure's managed PostgreSQL and Google's Cloud SQL. In-memory databases like AWS ElastiCache and Azure Cache for Redis are comparable, but GCP's Memorystore integrates better with Google's data tools.",
+        "headings": [
+            "Databases"
+        ],
+        "subheadings": [],
+        "footers": [],
+        "tables": [],
+        "figures": [
+            {
+                "caption": "Extracted raw image 1 from page 5",
+                "caption_paragraphs": [],
+                "elements": [],
+                "description": "The image presents a textual description of database solutions provided by major cloud platforms including AWS (Amazon Web Services), Azure (Microsoft), and GCP (Google Cloud Platform). The text is handwritten and organized neatly into lines with consistent spacing. The background features a gradient design that transitions from darker shading on the left to lighter shading on the right, introducing a subtle aesthetic contrast. Here is an exhaustive textual analysis based on the content of the image:\n\n1. **Header**:\n   - The heading \"Databases\" is written at the top.\n\n2. **Content Analysis**:\n   - AWS (Amazon Web Services):\n     - AWS is described as offering the most diverse portfolio of database solutions.\n     - It includes **RDS** (Relational Database Service) for relational databases.\n     - AWS DynamoDB is singled out as a NoSQL database solution.\n     - AWS Redshift is highlighted for data warehousing purposes.\n     - AWS Aurora, a MySQL/PostgreSQL-compatible open-source database, is noted to outperform Azure’s equivalent PostgreSQL solution and Google’s Cloud SQL.\n     - In-memory databases provided by AWS include **ElastiCache**.\n\n   - Azure (Microsoft):\n     - Azure SQL Database is praised as a leading choice for Microsoft-oriented use cases (\"Microsoft shops\").\n     - Azure’s Cosmos DB is introduced as a multi-model database solution with SLA-backed latency of under 10 milliseconds.\n     - Azure Cache for Redis is cited as comparable to AWS’s ElastiCache for in-memory database services.\n\n   - Google Cloud Platform (GCP):\n     - Google’s Cloud Spanner is recognized as unique for horizontally scalable relational databases.\n     - Google BigQuery dominates as the leading serverless tool for analytics.\n     - GCP's Memorystore is described as integrating better with Google’s ecosystem of data tools compared to alternatives like AWS’s ElastiCache and Azure Cache for Redis.\n\n3. **Text Formatting**:\n   - The text follows consistent left-aligned formatting, arranged in short sentences across paragraph-like structures.\n   - The style is predominantly descriptive and comparative, focusing on performance and notable features for each service.\n\n4. **Visual Details**:\n   - The gradient background shifts from black/gray on the left edge to white on the right side, providing a visually clean and modern appearance.\n   - Horizontal lines run across the image, adding structure to the text positioning, similar to lined notebook paper.\n\n5. **Key Observations**:\n   - AWS appears to be positioned as the leader",
+                "image_file": "Images\\pymupdf_page5_fig1.png",
+                "method": "pymupdf"
+            }
+        ],
+        "shortDescription": "this is my description"
+    }
+]

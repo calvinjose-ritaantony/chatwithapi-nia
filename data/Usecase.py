@@ -26,5 +26,4 @@ class Usecase(BaseModel):
     user_message: str
     fields_to_select: List[str]
     document_count: int
-    role_information: str
     model_configuration: ModelConfiguration
