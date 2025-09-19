@@ -4,6 +4,7 @@ import re
 import os
 
 from openai import AsyncAzureOpenAI
+from openai.types.chat import ParsedChatCompletion
 from PromptValidationResult import PromptValidationResult
 from typing import Optional, Dict
 from azure_openai_utils import (GPT_4o_ENDPOINT_URL, GPT_4o_API_KEY, GPT_4o_API_VERSION, GPT_4o_MODEL_NAME)
@@ -85,7 +86,7 @@ class PromptValidator:
         last_exception = None
         for model_name in retry_models:
             try:
-                response = await azure_openai_client.chat.completions.parse(
+                response: ParsedChatCompletion  = await azure_openai_client.chat.completions.parse(
                 model=model_name,
                 messages=conversations,
                 max_tokens=1200,  # Increased to accommodate justifications

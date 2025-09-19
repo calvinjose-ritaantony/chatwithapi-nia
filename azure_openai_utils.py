@@ -1473,7 +1473,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
     # Get the tools and tool definitions
     tool_names, tool_definitions = await get_tools(gpt_id=gpt["_id"], use_case=use_case, scenario=scenario)
     logger.info(f"Tools available for function calling : {tool_names}")
-    logger.info(f"Conversation History Passed to function calling model : {conversations}")
+    #logger.info(f"Conversation History Passed to function calling model : {conversations}")
 
     # Initial user message
     if use_case == "GENTELL_WOUND_ADVISOR":
@@ -1498,7 +1498,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
 
     response_from_function_calling_model = ""
     function_calling_model_response = ""
-    logger.info(f"Function calling conversations : {function_calling_conversations}")
+    #logger.info(f"Function calling conversations : {function_calling_conversations}")
 
     try:
         # First API call: Ask the model to use the function

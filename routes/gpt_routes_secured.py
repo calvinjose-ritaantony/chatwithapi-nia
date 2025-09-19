@@ -18,6 +18,7 @@ from azure.identity import ClientSecretCredential
 from azure.core.exceptions import AzureError
 
 from pymongo.errors import DuplicateKeyError
+from PromptValidationResult import PromptValidationResult
 from app_config import RAG_DOCUMENTS_FOLDER
 from data.GPTData import GPTData
 from auth_config import azure_scheme, validate_token
@@ -690,7 +691,7 @@ async def refinePrompt(
             system_prompt = gpt_data["instructions"]
 
         # Process prompt
-        response = await validator.process_prompt_optimized(input_prompt, system_prompt)
+        response: PromptValidationResult = await validator.process_prompt_optimized(input_prompt, system_prompt)
         refinedPrompt = response.refined_prompt
         promptTitle = response.title if hasattr(response, "title") else "Simple Prompt"
         logger.info(f"Title: {promptTitle} Refined prompt : {refinedPrompt} Length : {len(refinedPrompt)} ")
