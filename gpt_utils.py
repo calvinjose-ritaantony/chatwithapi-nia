@@ -41,7 +41,7 @@ def create_app_directories():
     os.makedirs(STATIC_SCRIPTS_FOLDER, exist_ok=True)
     os.makedirs(STATIC_CSS_FOLDER, exist_ok=True)
 
-async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile],isDocIntelligence: bool= False):
+async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile],isDocIntelligence: bool= False,shortDescription=None):
     # Additional validation (you can add more checks here, like file type validation)
     # ALLOWED_DOCUMENT_EXTENSIONS = ('.json', '.jsonl', '.pdf', '.csv', '.txt')
     # ALLOWED_IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg')
@@ -144,7 +144,7 @@ async def handle_upload_files(gpt_id: str, gpt: GPTData, files: list[UploadFile]
                     json_folder,
                     f"{file_name}_structured.json"
                     )
-                    analyze_pdf_with_docintel(file_path, output_path=output_json_path)
+                    analyze_pdf_with_docintel(file_path, output_path=output_json_path, shortDescription=shortDescription)
                     logger.info(f"PDF analysis results saved to {output_json_path}")
 
                 except Exception as e:

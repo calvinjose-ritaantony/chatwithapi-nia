@@ -70,7 +70,7 @@ AZURE_OPENAI_EMBEDDING_DEPLOYMENT = "text-embedding-3-large" #os.getenv("EMBEDDI
 AZURE_OPENAI_MODEL_NAME = "text-embedding-3-large" #os.getenv("EMBEDDING_MODEL_NAME", "gpt-4o")
 AZURE_OPENAI_MODEL_DIMENSIONS = int(os.getenv("AZURE_OPENAI_EMBEDDING_DIMENSIONS", 1536))
 env_instance = os.getenv("ENV_INSTANCE", "dev-001")
-
+top = os.getenv("TOP")
 
 # index_name = f"{SEARCH_INDEX_NAME}-{env_instance}"
 
@@ -141,6 +141,68 @@ async def upload_file_to_blob(folder_path,container_name):
 
 # endregion
 
+def get_search_client(index_name: str):
+    endpoint = os.getenv("SEARCH_ENDPOINT_URL")
+    key = os.getenv("SEARCH_KEY")
+    credential = AzureKeyCredential(key)
+    return SearchClient(endpoint=endpoint, index_name=index_name, credential=credential)
+
+#get Document name
+async def fetch_unique_document_names():
+    """
+    Fetch unique document names from both PDF and JSON indexes.
+    For PDFs, uses 'title'. For JSON, uses 'document_name'.
+    """
+    try:
+        names = set()
+        SEARCH_INDEX_NAME_pdf = f"{SEARCH_INDEX_NAME_pdf}-{env_instance}"
+        SEARCH_INDEX_NAME_Json = f"{SEARCH_INDEX_NAME_Json}-{env_instance}"
+        # PDF titles
+        search_client_pdf = get_search_client(SEARCH_INDEX_NAME_pdf)
+        results_pdf = search_client_pdf.search(search_text="*", select=["title"], top=top)
+        for doc in results_pdf:
+            title = doc.get("title")
+            if title:
+                names.add(title)
+
+        # JSON document names
+        search_client_json = get_search_client(SEARCH_INDEX_NAME_Json)
+        results_json = search_client_json.search(search_text="*", select=["documentName"], top=top)
+        for doc in results_json:
+            doc_name = doc.get("documentName")
+            if doc_name:
+                names.add(doc_name)
+
+        return sorted(names)
+
+    except Exception as e:
+        print(f"Error fetching unique document names: {e}")
+        return []  # return empty list on error
+    
+
+
+    # names = set()
+
+    # # PDF titles
+    # search_client_pdf = get_search_client(SEARCH_INDEX_NAME_pdf)
+    # results_pdf = search_client_pdf.search(search_text="*", select=["title"], top=top)
+    # for doc in results_pdf:
+    #     title = doc.get("title")
+    #     if title:
+    #         names.add(title)
+
+    # # JSON document names
+    # search_client_json = get_search_client(SEARCH_INDEX_NAME_Json)
+    # results_json = search_client_json.search(search_text="*", select=["documentName"], top=top)
+    # for doc in results_json:
+    #     doc_name = doc.get("documentName")
+    #     if doc_name:
+    #         names.add(doc_name)
+
+    # return sorted(names)
+
+
+
 # region : Data Source
 
 #  Data sources name
@@ -177,7 +239,8 @@ async def create_search_index(index_name,hnswProfile, hnswAlgConfigName, vectori
     fields = [
     SearchField(name="chunk_id", type=SearchFieldDataType.String, key=True, sortable=True, analyzer_name="keyword"),  #LexicalAnalyzerName.STANDARD_LUCENE
     SearchField(name="parent_id", type=SearchFieldDataType.String, sortable=True, filterable=True),  
-    SearchField(name="title", type=SearchFieldDataType.String),      
+    # SearchField(name="title", type=SearchFieldDataType.String),   
+    SearchField(name="title", type=SearchFieldDataType.String, searchable=True, sortable=False, filterable=True),   
     SearchField(name="chunk", type=SearchFieldDataType.String, sortable=False),  
     SearchField(name="text_vector", type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
                 searchable=True,
@@ -249,6 +312,18 @@ async def create_search_index(index_name,hnswProfile, hnswAlgConfigName, vectori
 
 async def create_search_index_json(index_name,hnswProfile, hnswAlgConfigName, vectorizerName, semanticConfig):
     fields = [
+        SearchField(name="documentName", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
+        SearchField(
+    name="shortDescription",
+    type=SearchFieldDataType.String,
+    searchable=True,
+    filterable=True,
+    retrievable=True,
+    sortable=False,
+    facetable=False,
+    key=False,
+    analyzer_name="standard.lucene"
+),
         SearchField(name="pageNumber", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
         SearchField(name="handwrittenContent", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
         SearchField(name="content", type=SearchFieldDataType.String, searchable=True, filterable=True, retrievable=True, sortable=False, facetable=False, key=False, analyzer_name="standard.lucene"),
@@ -576,9 +651,111 @@ async def create_indexer_json(indexer_name, datasource_name,index_name):
     #     logger.info(f" Failed to create Indexer: {e}")
 
 
+async def search_within_documents(document_names: List[str], search_text: str = "*"):
+    """
+    Search only within the selected document (PDF or JSON) by its name.
+    Checks both indexes and returns results from the matching document.
+    """
+    SEARCH_INDEX_NAME_Json_indexed = f"{SEARCH_INDEX_NAME_Json}-{env_instance}"
+    SEARCH_INDEX_NAME_pdf_indexed = f"{SEARCH_INDEX_NAME_pdf}-{env_instance}"
+    results = []
+    search_client_pdf = SearchClient(
+                    endpoint=SEARCH_SERVICE_ENDPOINT,
+                    index_name= SEARCH_INDEX_NAME_pdf_indexed,
+                    credential=AzureKeyCredential(SEARCH_API_KEY)
+                )
+    
+    search_client_json = SearchClient(
+                    endpoint=SEARCH_SERVICE_ENDPOINT,
+                    index_name=SEARCH_INDEX_NAME_Json_indexed,
+                    credential=AzureKeyCredential(SEARCH_API_KEY)
+                )
+    for document_name in document_names:
+        _, ext = os.path.splitext(document_name.lower())
+        
+        if ext == ".pdf" and SEARCH_INDEX_NAME_pdf_indexed:
+            try:
+                filter_pdf = f"title eq '{document_name}'"
+                pdf_results = await search_client_pdf.search(search_text=search_text, filter=filter_pdf, top=top)
+                async for doc in pdf_results:
+                    results.append(doc)
+            except Exception as e:
+                print(f"PDF search error for '{document_name}': {e}")
+
+        elif ext == ".json" and SEARCH_INDEX_NAME_Json_indexed:
+            try:
+
+                filter_json = f"documentName eq '{document_name}'"
+                json_results = await search_client_json.search(search_text=search_text, filter=filter_json, top=top)
+                async for doc in json_results:
+                    results.append(doc)
+            except Exception as e:
+                print(f"JSON search error for '{document_name}': {e}")
+
+        else:
+            print(f"Skipping '{document_name}': unsupported file type or no index available.")
+
+    return results
 
 
+async def search_within_documents_using_searchIn(document_names: List[str], search_text: str = "*", top: int = 1000):
+    """
+    Search across multiple PDFs and JSONs at once using search.in
+    """
+    try:
+        pdf_index = f"{SEARCH_INDEX_NAME_pdf}-{env_instance}"
+        json_index = f"{SEARCH_INDEX_NAME_Json}-{env_instance}"
 
+        # search_client_pdf = get_search_client(pdf_index)
+        # search_client_json = get_search_client(json_index)
+        search_client_pdf = SearchClient(
+            endpoint=SEARCH_SERVICE_ENDPOINT,
+            index_name=pdf_index,
+            credential=AzureKeyCredential(SEARCH_API_KEY)
+        )
+
+        search_client_json = SearchClient(
+            endpoint=SEARCH_SERVICE_ENDPOINT,
+            index_name=json_index,
+            credential=AzureKeyCredential(SEARCH_API_KEY)
+        )
+
+        results = []
+
+        # --- PDF documents ---
+        pdf_docs = [doc.strip() for doc in document_names if doc.endswith(".pdf")]
+        if pdf_docs:
+            filter_pdf = f"search.in(title, '{','.join(pdf_docs)}', ',')"
+            print("PDF filter:", filter_pdf)  # Debug
+            pdf_results = await search_client_pdf.search(
+                search_text=search_text,
+                filter=filter_pdf,
+                top=top
+            )
+            async for doc in pdf_results:
+                results.append(doc)
+
+        # --- JSON documents ---
+        json_docs = [doc.strip() for doc in document_names if doc.endswith(".json")]
+        if json_docs:
+            filter_json = f"search.in(documentName, '{','.join(json_docs)}', ',')"
+            print("JSON filter:", filter_json)  # Debug
+            json_results = await search_client_json.search(
+                search_text=search_text,
+                filter=filter_json,
+                top=top
+            )
+            async for doc in json_results:
+                results.append(doc)
+
+        return results
+
+    except Exception as e:
+        print(f"Error in search_within_documents_using_searchIn: {e}")
+        return []
+
+
+        
 # region : Semantic / Vector Search Query
 
 #  Run a Semantic Search Query
@@ -620,7 +797,6 @@ async def run_semantic_search(query):
 #  Main Function
 async def store_to_azure_ai_search(collection_name: str, use_semantic_chunking: bool, isDocIntelligence: bool):
     """Main function to execute the workflow."""
-
 
 
     SEARCH_INDEX_NAME = SEARCH_INDEX_NAME_Json if isDocIntelligence else SEARCH_INDEX_NAME_pdf

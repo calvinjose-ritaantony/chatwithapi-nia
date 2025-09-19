@@ -6,14 +6,14 @@ from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.core.credentials import AzureKeyCredential
 from openai import AzureOpenAI
 import time
-
+import logging
 start_time = time.time()
 
 # ---------- Configuration ----------
 # pdf_path = "Sample4.pdf"
 images_dir = "Images"
 os.makedirs(images_dir, exist_ok=True)
-
+logger = logging.getLogger(__name__)
 AZURE_DOC_INTEL_ENDPOINT = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
 AZURE_DOC_INTEL_KEY = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
 
@@ -132,6 +132,7 @@ def extract_fallback_images(pdf_path, page_num):
 
 # ---------- Extract structured data + figures ----------
 def extract_page_summary(pdf_path,result):
+    document_name = os.path.splitext(os.path.basename(pdf_path))[0] + ".json"  # Gets 'Handwritten.pdf'
     paragraph_lookup = {idx: p for idx, p in enumerate(result.paragraphs)} if hasattr(result, "paragraphs") else {}
     pages_summary = []
 
@@ -153,7 +154,7 @@ def extract_page_summary(pdf_path,result):
 
         # Extract tables
         tables = []
-        for table in getattr(result, "tables", []):
+        for table in getattr(result, "tables", []) or []:
             if table.bounding_regions and any(br.page_number == page_num for br in table.bounding_regions):
                 tbl = {
                     "caption": table.caption.content if getattr(table, "caption", None) else "",
@@ -170,7 +171,7 @@ def extract_page_summary(pdf_path,result):
         figures = []
         figures_found = False
 
-        for idx, fig in enumerate(getattr(result, "figures", []), start=1):
+        for idx, fig in enumerate(getattr(result, "figures", []) or [], start=1):
             if fig.bounding_regions and any(br.page_number == page_num for br in fig.bounding_regions):
                 figures_found = True
                 br = fig.bounding_regions[0]
@@ -192,14 +193,15 @@ def extract_page_summary(pdf_path,result):
                 })
 
         if not figures_found:
-            print(f"[!] No figure bounds for page {page_num}, using fallback images...")
+            logger.info(f"[!] No figure bounds for page {page_num}, using fallback images...")
             fallback_figures = extract_fallback_images(pdf_path, page_num)
             if fallback_figures:
                 figures.extend(fallback_figures)
             else:
-                print(f"[!] No figures found in fallback for page {page_num}")
+                logger.info(f"[!] No figures found in fallback for page {page_num}")
 
         page_summary = {
+            "documentName": document_name,
             "pageNumber": page_num,
             "handwrittenContent": handwritten_present,
             "content": page_text,
@@ -214,7 +216,7 @@ def extract_page_summary(pdf_path,result):
     return pages_summary
 
 
-def analyze_pdf_with_docintel(pdf_path, output_path="structured_output_with_Document.json"):
+def analyze_pdf_with_docintel(pdf_path, output_path="structured_output_with_Document.json",shortDescription=None):
     """
     Analyze a PDF using Azure Document Intelligence (prebuilt-layout model),
     process results, and save structured summary to a JSON file.
@@ -241,20 +243,23 @@ def analyze_pdf_with_docintel(pdf_path, output_path="structured_output_with_Docu
 
         # --- Clean & Extract Summary ---
         clean_data(result_dict)  # assuming you already have this function
-        summary = extract_page_summary(pdf_path,result)  # assuming you already have this function
+        summary = extract_page_summary(pdf_path,result) 
+        if shortDescription:
+            for page in summary:
+                page["shortDescription"] = shortDescription 
         # wrapped_summary = {"document": summary}
 
         # --- Save results to JSON ---
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=4, ensure_ascii=False)
 
-        print(f"Structured output with figure descriptions saved to '{output_path}'")
+        logger.info(f"Structured output with figure descriptions saved to '{output_path}'")
 
     except Exception as e:
-        print(f"Error analyzing PDF {pdf_path}: {e}")
+        logger.error(f"Error analyzing PDF {pdf_path}: {e}")
         summary = {}
 
     end_time = time.time()
-    print(f"Total execution time: {end_time - start_time:.2f} seconds")
+    logger.info(f"Total execution time: {end_time - start_time:.2f} seconds")
 
     return summary

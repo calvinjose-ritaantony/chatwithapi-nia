@@ -1,0 +1,1628 @@
+[
+    {
+        "documentName": "TableOnly.json",
+        "pageNumber": 1,
+        "handwrittenContent": false,
+        "content": "1. Comparison of Popular Generative AI Models Feature ChatGPT (GPT-4) Google Gemini (Ultra) Claude (Anthropic) LLAMA (Meta Al) Developer OpenAI Google DeepMind Anthropic Meta Strength Natural language understanding and reasoning Multimodal inputs (text, images, code) Safer outputs via Constitutional AI Lightweight, open- source model Training Data Broad, internet-scale Multimodal (text + code + images) Text from diverse sources Text datasets (books, code) API Availability Yes Yes Yes Limited via partners Use Case Chatbots, coding, writing Multimodal reasoning Safer AI assistants Research, fine- tuning 2. AI Learning Types Comparison Learning Type Description Example Algorithms Use Cases Supervised Learns from labeled data Decision Trees, SVM, CNN Spam detection, image classification Unsupervised Finds hidden patterns in unlabeled data K-Means, PCA Customer segmentation, anomaly detection Reinforcement Learns via rewards and punishments Q-learning, Deep Q- Network Robotics, game playing Self-Supervised Learns structure from unlabeled data BERT, GPT NLP, vision tasks Semi- Supervised Mix of labeled and unlabeled data Ladder Networks, Mean Teacher Text classification with limited labels 3. Comparison of AI Frameworks Feature TensorFlow PyTorch JAX Keras Language Python, C++ Python Python Python",
+        "headings": [
+            "1. Comparison of Popular Generative AI Models",
+            "2. AI Learning Types Comparison",
+            "3. Comparison of AI Frameworks"
+        ],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 6,
+                "columnCount": 5,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Feature",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "ChatGPT (GPT-4)",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Google Gemini (Ultra)",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Claude (Anthropic)",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 4,
+                        "content": "LLAMA (Meta Al)",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Developer",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "OpenAI",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Google DeepMind",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Anthropic",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 4,
+                        "content": "Meta",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Strength",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Natural language understanding and reasoning",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Multimodal inputs (text, images, code)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "Safer outputs via Constitutional AI",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 4,
+                        "content": "Lightweight, open- source model",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Training Data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Broad, internet-scale",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Multimodal (text + code + images)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Text from diverse sources",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 4,
+                        "content": "Text datasets (books, code)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "API Availability",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 4,
+                        "content": "Limited via partners",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "Use Case",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "Chatbots, coding, writing",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 2,
+                        "content": "Multimodal reasoning",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 3,
+                        "content": "Safer AI assistants",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 4,
+                        "content": "Research, fine- tuning",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 6,
+                "columnCount": 4,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Learning Type",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Description",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Example Algorithms",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Use Cases",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Supervised",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Learns from labeled data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Decision Trees, SVM, CNN",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Spam detection, image classification",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Unsupervised",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Finds hidden patterns in unlabeled data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "K-Means, PCA",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "Customer segmentation, anomaly detection",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Reinforcement",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Learns via rewards and punishments",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Q-learning, Deep Q- Network",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Robotics, game playing",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Self-Supervised",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Learns structure from unlabeled data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "BERT, GPT",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "NLP, vision tasks",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "Semi- Supervised",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "Mix of labeled and unlabeled data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 2,
+                        "content": "Ladder Networks, Mean Teacher",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 3,
+                        "content": "Text classification with limited labels",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 2,
+                "columnCount": 5,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Feature",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "TensorFlow",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "PyTorch",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "JAX :selected:",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 4,
+                        "content": "Keras",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Language",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Python, C++",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Python",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Python",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 4,
+                        "content": "Python",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "TableOnly.json",
+        "pageNumber": 2,
+        "handwrittenContent": false,
+        "content": "Feature TensorFlow PyTorch JAX Keras Developer Google Meta Google Open-source (built on TensorFlow) Use Case Production- ready Research- focused High-performance ML Easy prototyping Ease of Use Moderate High Low Very High Community Large Very Large Growing Large 4. Cloud AI Service Providers Comparison Feature Azure AI AWS SageMaker Google Vertex AI IBM Watson Cloud Platform Microsoft Azure Amazon Web Services Google Cloud Platform IBM Cloud AutoML Support Yes Yes Yes Limited Model Deployment Easy with Azure ML Integrated with SageMaker endpoints Integrated notebooks & endpoints Focused on enterprise AI Custom Model Training Yes Yes Yes Yes Notable Tools Azure OpenAI, Cognitive Services SageMaker Studio Vertex AI Pipelines, PaLM Watson Assistant, Discovery 5. Computer Vision Model Comparison Model Use Case Strengths Limitations YOLOV8 Real-time object detection Fast inference, accurate May miss small objects Faster R-CNN Object detection/classification High accuracy Slower than YOLO Mask R-CNN Instance segmentation Detects objects and masks Computationally intensive Vision Transformer (ViT) Image classification Captures global context Requires large training data",
+        "headings": [
+            "4. Cloud AI Service Providers Comparison",
+            "5. Computer Vision Model Comparison"
+        ],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 5,
+                "columnCount": 5,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Feature",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "TensorFlow",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "PyTorch",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "JAX",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 4,
+                        "content": "Keras",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Developer",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Google",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Meta",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Google",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 4,
+                        "content": "Open-source (built on TensorFlow)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Use Case",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Production- ready",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Research- focused",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "High-performance ML",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 4,
+                        "content": "Easy prototyping",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Ease of Use",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Moderate",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "High",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Low",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 4,
+                        "content": "Very High",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Community",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Large",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Very Large",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "Growing",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 4,
+                        "content": "Large",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 6,
+                "columnCount": 5,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Feature",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Azure AI",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "AWS SageMaker",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Google Vertex AI",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 4,
+                        "content": "IBM Watson",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Cloud Platform",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Microsoft Azure",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Amazon Web Services",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Google Cloud Platform",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 4,
+                        "content": "IBM Cloud",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "AutoML Support",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 4,
+                        "content": "Limited",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Model Deployment",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Easy with Azure ML",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Integrated with SageMaker endpoints",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Integrated notebooks & endpoints",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 4,
+                        "content": "Focused on enterprise AI",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Custom Model Training",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 4,
+                        "content": "Yes",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "Notable Tools",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "Azure OpenAI, Cognitive Services",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 2,
+                        "content": "SageMaker Studio",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 3,
+                        "content": "Vertex AI Pipelines, PaLM",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 4,
+                        "content": "Watson Assistant, Discovery",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 5,
+                "columnCount": 4,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Model",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Use Case",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Strengths",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Limitations",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "YOLOV8",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Real-time object detection",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Fast inference, accurate",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "May miss small objects",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Faster R-CNN",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Object detection/classification",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "High accuracy",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "Slower than YOLO",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Mask R-CNN",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Instance segmentation",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Detects objects and masks",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Computationally intensive",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Vision Transformer (ViT)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Image classification",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Captures global context",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "Requires large training data",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "TableOnly.json",
+        "pageNumber": 3,
+        "handwrittenContent": false,
+        "content": "6. NLP Model Comparison Model Key Focus Pros Cons BERT Contextual embeddings Bidirectional, accurate Not generative GPT-4 Text generation Fluent, flexible, multilingual Resource-intensive RoBERTa Improved BERT Robust performance No generative output T5 Text-to-text tasks Unified format for NLP tasks Requires large resources 7. AI vs ML vs DL Aspect AI Machine Learning (ML) Deep Learning (DL) Definition Simulating human intelligence Enabling systems to learn from data Using deep neural networks for learning Complexity High Medium High Dependency on Data Moderate High Very High Examples Chatbots, robots Decision Trees, Random Forests CNNs, RNNs, Transformers Applications General reasoning tasks Predictive modeling Image and speech recognition 8. Comparison of Explainable AI Techniques Technique Description Best For Limitation LIME Local interpretable model explanation Tabular/text/image models Can be inconsistent SHAP Shapley values for feature attribution Global + local explanations Computationally expensive Feature Importance Ranking features by influence Simpler models Not always intuitive",
+        "headings": [
+            "6. NLP Model Comparison",
+            "7. AI vs ML vs DL",
+            "8. Comparison of Explainable AI Techniques"
+        ],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 5,
+                "columnCount": 4,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Model",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Key Focus",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Pros",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Cons",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "BERT",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Contextual embeddings",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Bidirectional, accurate",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Not generative",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "GPT-4",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Text generation",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Fluent, flexible, multilingual",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "Resource-intensive",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "RoBERTa",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Improved BERT",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Robust performance",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "No generative output",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "T5",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Text-to-text tasks",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Unified format for NLP tasks",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "Requires large resources",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 6,
+                "columnCount": 4,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Aspect",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "AI",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Machine Learning (ML)",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Deep Learning (DL)",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Definition",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Simulating human intelligence",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Enabling systems to learn from data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Using deep neural networks for learning",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Complexity",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "High",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Medium",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "High",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Dependency on Data",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Moderate",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "High",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Very High",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Examples",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Chatbots, robots",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Decision Trees, Random Forests",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 3,
+                        "content": "CNNs, RNNs, Transformers",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "Applications",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "General reasoning tasks",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 2,
+                        "content": "Predictive modeling",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 3,
+                        "content": "Image and speech recognition",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 4,
+                "columnCount": 4,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Technique",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Description",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Best For",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Limitation",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "LIME",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Local interpretable model explanation",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Tabular/text/image models",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Can be inconsistent",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "SHAP",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Shapley values for feature attribution",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Global + local explanations",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 3,
+                        "content": "Computationally expensive",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Feature Importance",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Ranking features by influence",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Simpler models",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 3,
+                        "content": "Not always intuitive",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [],
+        "shortDescription": "this is my description"
+    },
+    {
+        "documentName": "TableOnly.json",
+        "pageNumber": 4,
+        "handwrittenContent": false,
+        "content": "Technique Description Best For Limitation Counterfactuals Shows minimal input change to alter output High-stakes domains (finance, healthcare) Complex for multi- feature inputs 9. Human Intelligence vs Artificial Intelligence Aspect Human Intelligence Artificial Intelligence Origin Biological Man-made (computer programs) Learning Method Experience, emotions Data and algorithms Flexibility Highly adaptable Task-specific (narrow AI) Decision Making Often intuitive or emotional Logic-based, statistical Creativity Original and abstract Pattern-based, generative 10. Comparison of AI Use Cases Across Industries Industry Use Case Example AI Benefits Healthcare Disease diagnosis, imaging Faster, more accurate diagnosis Finance Fraud detection, credit scoring Risk reduction, better decision-making Retail Product recommendation, inventory Increased sales, optimized logistics Manufacturing Predictive maintenance Reduced downtime, cost savings Education Personalized learning, grading Improved engagement and efficiency Agriculture Crop monitoring, yield prediction Efficient resource usage, higher output",
+        "headings": [
+            "9. Human Intelligence vs Artificial Intelligence",
+            "10. Comparison of AI Use Cases Across Industries"
+        ],
+        "subheadings": [],
+        "footers": [],
+        "tables": [
+            {
+                "caption": "",
+                "rowCount": 2,
+                "columnCount": 4,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Technique",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Description",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Best For",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 3,
+                        "content": "Limitation",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Counterfactuals",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Shows minimal input change to alter output",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "High-stakes domains (finance, healthcare)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 3,
+                        "content": "Complex for multi- feature inputs",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 6,
+                "columnCount": 3,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Aspect",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Human Intelligence",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "Artificial Intelligence",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Origin",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Biological",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Man-made (computer programs)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Learning Method",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Experience, emotions",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Data and algorithms",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Flexibility",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Highly adaptable",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Task-specific (narrow AI)",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Decision Making",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Often intuitive or emotional",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Logic-based, statistical",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "Creativity",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "Original and abstract",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 2,
+                        "content": "Pattern-based, generative",
+                        "kind": null
+                    }
+                ]
+            },
+            {
+                "caption": "",
+                "rowCount": 7,
+                "columnCount": 3,
+                "cells": [
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 0,
+                        "content": "Industry",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 1,
+                        "content": "Use Case Example",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 0,
+                        "columnIndex": 2,
+                        "content": "AI Benefits",
+                        "kind": "columnHeader"
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 0,
+                        "content": "Healthcare",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 1,
+                        "content": "Disease diagnosis, imaging",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 1,
+                        "columnIndex": 2,
+                        "content": "Faster, more accurate diagnosis",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 0,
+                        "content": "Finance",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 1,
+                        "content": "Fraud detection, credit scoring",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 2,
+                        "columnIndex": 2,
+                        "content": "Risk reduction, better decision-making",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 0,
+                        "content": "Retail",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 1,
+                        "content": "Product recommendation, inventory",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 3,
+                        "columnIndex": 2,
+                        "content": "Increased sales, optimized logistics",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 0,
+                        "content": "Manufacturing",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 1,
+                        "content": "Predictive maintenance",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 4,
+                        "columnIndex": 2,
+                        "content": "Reduced downtime, cost savings",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 0,
+                        "content": "Education",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 1,
+                        "content": "Personalized learning, grading",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 5,
+                        "columnIndex": 2,
+                        "content": "Improved engagement and efficiency",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 0,
+                        "content": "Agriculture",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 1,
+                        "content": "Crop monitoring, yield prediction",
+                        "kind": null
+                    },
+                    {
+                        "rowIndex": 6,
+                        "columnIndex": 2,
+                        "content": "Efficient resource usage, higher output",
+                        "kind": null
+                    }
+                ]
+            }
+        ],
+        "figures": [],
+        "shortDescription": "this is my description"
+    }
+]
