@@ -1,4 +1,3 @@
-import os
 import logging
 import datetime as date
 from typing import List
@@ -6,7 +5,6 @@ from bson import ObjectId
 from pymongo import MongoClient, ASCENDING, DESCENDING
 from pymongo.results import UpdateResult, InsertOneResult, DeleteResult
 from pymongo.errors import DuplicateKeyError
-import re
 from prompt_template import build_prompt_templates
 
 from data.GPTData import GPTData
@@ -16,8 +14,10 @@ from mongo_client import get_mongo_db
 from role_mapping import NIA_OFFICIAL_MAIL, NIA_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE, USE_CASES_LIST
 from role_mapping import NIA_TOOL_FUNCTIONS
 
+from app_config import app_cache
+
 PROMPT_TEMPLATES={}
-app_cache = {}
+
 logger = logging.getLogger(__name__)
 
 ignored_content = "The requested information is not found in the retrieved data. Please try another query or topic."
@@ -465,7 +465,7 @@ async def get_prompts(gpt_id: str, use_case_name: str, user: str):
                 if isinstance(item, dict) and item.get("user") == user:
                     filtered_prompts.append(item)
         prompt["prompts"] = filtered_prompts
-    logger.info(f"prompt: {prompt}")
+    #logger.info(f"prompt: {prompt}")
 
     return prompt.get("prompts") if prompt else None
 
@@ -648,14 +648,20 @@ async def get_order_by_id(order_id: str):
 async def get_gpts_for_user(username):
     gpts_collection = await get_collection("gpts")
     gpts = await gpts_collection.find({'user': username}).to_list(None) # Get all GPTs from MongoDB
-    for gpt in gpts:
-        gpt["_id"] = str(gpt.get("_id", "")) # Convert ObjectId to string
-        gpt["use_case_id"] = str(gpt.get("use_case_id", "")) # Convert ObjectId to string or set to empty string if not available
 
-    
-    PROMPT_TEMPLATES = await get_prompt_templates_from_db(gpt_id=gpt["_id"])   
-    app_cache["PROMPT_TEMPLATES"] = PROMPT_TEMPLATES
-    logger.info(f"Fetched prompt templates from DB: {PROMPT_TEMPLATES}")
+    if len(gpts) > 0:
+        for gpt in gpts:
+            gpt_id = str(gpt.get("_id", "")) # Convert ObjectId to string
+            gpt["_id"] = gpt_id
+            gpt["use_case_id"] = str(gpt.get("use_case_id", "")) # Convert ObjectId to string or set to empty string if not available
+        
+            # Configure Prompt Templates for GPT
+            if len(app_cache) == 0 or app_cache.get(gpt_id) is None:
+                PROMPT_TEMPLATES = await get_prompt_templates_from_db(gpt_id=gpt_id) 
+                if PROMPT_TEMPLATES and len(PROMPT_TEMPLATES) > 0:  
+                    app_cache[gpt_id] = PROMPT_TEMPLATES
+                
+                #logger.info(f"Fetched prompt templates from DB: {PROMPT_TEMPLATES}")
 
     return gpts
 

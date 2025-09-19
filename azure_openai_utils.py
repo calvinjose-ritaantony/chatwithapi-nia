@@ -1,14 +1,6 @@
-import io
-from typing import Any, List
-import unicodedata
-
-from mongo_service import get_usecases_list
-
-from fpdf import FPDF
-from data.NiaTool import NiaTool
-from data.useCaseSpecificOutputs import StructuredSpendingAnalysis
-
 import os
+import io
+import re
 import uuid
 import base64
 import logging
@@ -16,29 +8,34 @@ import json
 import datetime
 import tiktoken
 from PIL import Image
+from typing import Any, List
+
+import unicodedata
+from fpdf import FPDF
 
 from fastapi.responses import StreamingResponse
 from fastapi import UploadFile, WebSocket
 from openai import APIConnectionError, AsyncAzureOpenAI, AzureOpenAI, BadRequestError, RateLimitError
 from openai.types.chat import ChatCompletion
-from azure.storage.blob import BlobServiceClient, BlobClient
-from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 
 from ConnectionManager import ConnectionManager
+
 from data.GPTData import GPTData
 from data.ModelConfiguration import ModelConfiguration
+from data.NiaTool import NiaTool
+from data.useCaseSpecificOutputs import StructuredSpendingAnalysis
 from dependencies import NiaAzureOpenAIClient
 
+from azure.storage.blob import BlobServiceClient, BlobClient
+from azure.storage.blob import generate_blob_sas, BlobSasPermissions
 from azure.identity import DefaultAzureCredential, ClientSecretCredential
 from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 from azure.search.documents import SearchClient
 
 from dependencies import NiaAzureOpenAIClient
 from gpt_utils import extract_json_content, extract_response, get_previous_context_conversations, get_token_count, handle_upload_files
-from standalone_programs.image_analyzer import analyze_image
-from dotenv import load_dotenv # For environment variables (recommended)
 
-from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases,get_prompt_templates_from_db,save_prompt_templates_to_db,save_pdf_content,app_cache
+from mongo_service import fetch_chat_history, delete_chat_history, update_message, get_usecases,get_prompt_templates_from_db,save_prompt_templates_to_db,save_pdf_content, get_usecases_list
 from role_mapping import ALL_FIELDS, DEFAULT_MODEL_CONFIGURATION, FORMAT_RESPONSE_AS_MARKDOWN, FUNCTION_CALLING_USER_MESSAGE, IMAGE_ANALYSIS_SYSTEM_PROMPT, NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME, NIA_FINOLEX_SEARCH_INDEX, NIA_SEMANTIC_CONFIGURATION_NAME,  CONTEXTUAL_PROMPT, SUMMARIZE_MODEL_CONFIGURATION, USE_CASES_LIST, FUNCTION_CALLING_SYSTEM_MESSAGE, schema_string_spending_pattern, GENTELL_FUNCTION_CALLING_SYSTEM_MESSAGE #
 from standalone_programs.simple_gpt import run_conversation, ticket_conversations, get_conversation
 from routes.ilama32_routes import chat2
@@ -48,8 +45,8 @@ from tool_utils import azure_ai_search_tool, web_search_tool, write_response_to_
 from web_search_utils import search_web_with_sonar
 from prompts import BALANCED_WEB_SEARCH_INTEGRATION, WEB_SEARCH_KEYWORD_CONSTRUCTION_SYSTEM_PROMPT, WEB_SEARCH_KEYWORD_CONSTRUCTION_USER_PROMPT, WEB_SEARCH_DATA_SUMMARIZATION_SYSTEM_PROMPT, SYSTEM_SAFETY_MESSAGE
 
-from fpdf import FPDF
-import re
+from app_config import app_cache
+from dotenv import load_dotenv # For environment variables (recommended)
 
 # from azure.mgmt.cognitiveservices import CognitiveServicesManagementClient
 
@@ -466,7 +463,7 @@ async def handle_ratelimit_exception_stream(gpt: GPTData, model_configuration: M
                         )
                         yield full_response_content
 
-async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, prompts_template: dict,  role_information: str, web_search:bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, prompt_templates: dict, web_search:bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
     
     pdf_id = None
     
@@ -482,7 +479,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         # Get Azure Open AI Client and fetch response
         client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, False)
         
-        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompts_template) 
+        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompt_templates) 
         extra_body = {}
         
         response: ChatCompletion = await client.chat.completions.parse(
@@ -513,7 +510,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
                                           model_response=model_response, 
-                                          prompts_template=prompts_template, 
+                                          prompt_templates=prompt_templates, 
                                           web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)
@@ -536,7 +533,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
                                           model_response=model_response, 
-                                          prompts_template=prompts_template, 
+                                          prompt_templates=prompt_templates, 
                                           web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)     
@@ -552,7 +549,7 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
                                           model_configuration=model_configuration, 
                                           use_case=use_case, 
                                           model_response=model_response, 
-                                          prompts_template=prompts_template, 
+                                          prompt_templates=prompt_templates, 
                                           web_search=web_search,
                                           socket_manager=socket_manager, 
                                           websocket=websocket)      
@@ -580,12 +577,12 @@ async def get_completion_from_messages_standard(user_query: str, gpt: GPTData, m
         "pdf_id": pdf_id
     }
 
-async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, prompts_template: dict, web_search: bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
+async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, conversations: list, use_case: str, prompt_templates: dict, web_search: bool, websocket: WebSocket = None, socket_manager: ConnectionManager = None):
      # This client is asynchronous and needs await signal. Set stream=True
     try:
         # Get Azure Open AI Client and fetch response
         client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, True)
-        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompts_template)
+        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompt_templates)
         extra_body = {}
 
         full_response_content = ""
@@ -661,13 +658,13 @@ async def get_completion_from_messages_stream(user_query: str, gpt: GPTData, mod
         logger.error(f"Error occurred while fetching model response: {e}", exc_info=True)
         return StreamingResponse(iter([str(e)]), media_type="text/event-stream")
 
-async def get_completion_from_messages_default(model_name: str, use_rag: bool, messages: list, model_configuration: ModelConfiguration, use_case: str, prompts_template: dict):
+async def get_completion_from_messages_default(model_name: str, use_rag: bool, messages: list, model_configuration: ModelConfiguration, use_case: str, prompt_templates: dict):
 
     model_response = "No Response from Model"
 
     # Get Azure Open AI Client and fetch response
     client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, False)
-    model_configuration: ModelConfiguration =  await construct_model_configuration(use_case, prompts_template)
+    model_configuration: ModelConfiguration =  await construct_model_configuration(use_case, prompt_templates)
 
     try:
         response: ChatCompletion = await client.chat.completions.create(
@@ -691,7 +688,7 @@ async def get_completion_from_messages_default(model_name: str, use_rag: bool, m
     
     return model_response
 
-async def analyzeImage_standard(gpt: GPTData, conversations, model_configuration, save_response_to_db: bool, use_case: str, prompts_template: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def analyzeImage_standard(gpt: GPTData, conversations, model_configuration, save_response_to_db: bool, use_case: str, prompt_templates: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     model_response = "No Response from Model"
     main_response = "No Response from Model"
     total_tokens = 0
@@ -702,7 +699,7 @@ async def analyzeImage_standard(gpt: GPTData, conversations, model_configuration
     #client = getAzureOpenAIClient(gpt4o_endpoint, gpt4o_api_key, gpt4o_api_version, False)
     try:
         client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, False)
-        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompts_template)
+        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompt_templates)
 
         try:
             response: ChatCompletion = await client.chat.completions.create(
@@ -756,13 +753,13 @@ async def analyzeImage_standard(gpt: GPTData, conversations, model_configuration
         "follow_up_questions": follow_up_questions
     }
 
-async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, save_response_to_db: bool, use_case: str, prompts_template: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, save_response_to_db: bool, use_case: str, prompt_templates: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     # Get Azure Open AI Client and fetch response
     #client = getAzureOpenAIClient(gpt4o_endpoint, gpt4o_api_key, gpt4o_api_version, True)
     extra_body = {}
     try:
         client = await getAzureOpenAIClient(AZURE_ENDPOINT_URL, AZURE_OPENAI_KEY, AZURE_OPENAI_MODEL_API_VERSION, True)
-        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompts_template)
+        model_configuration: ModelConfiguration = await construct_model_configuration(use_case, prompt_templates)
 
         try:
             full_response_content = ""
@@ -842,11 +839,11 @@ async def analyzeImage_stream(gpt: GPTData, conversations, model_configuration, 
         logger.error(f"Error occurred while fetching model response: {e}", exc_info=True)
         return StreamingResponse(iter([str(e)]), media_type="text/event-stream")
     
-async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, PROMPT_TEMPLATES: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def preprocessForRAG(user_message: str, image_response:str, use_case:str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, prompt_templates: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
 
     logger.info(f"USE_CASE : {use_case}")
 
-    USER_PROMPT = PROMPT_TEMPLATES[use_case]["context"]
+    USER_PROMPT = prompt_templates[use_case]["context"]
 
     #logger.info(f"PROMPT_TEMPLATES[{use_case}]: {USER_PROMPT}")
 
@@ -859,7 +856,7 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
         conversations=conversations, 
         model_configuration=model_configuration,
         scenario="pre_response",
-        prompts_template=PROMPT_TEMPLATES,
+        prompt_templates=prompt_templates,
         web_search=web_search,
         socket_manager=socket_manager, 
         websocket=websocket
@@ -903,7 +900,7 @@ async def preprocessForRAG(user_message: str, image_response:str, use_case:str, 
     token_data = await get_token_count(gpt["name"], gpt["instructions"],  conversations, user_message, int(model_configuration.max_tokens))
     logger.info(f"Token Calculation : stage 1.3 - preprocessForRAG {token_data}")
 
-async def processImage(streaming_response: bool, save_response_to_db: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, conversations: list,  use_case: str, prompts_template: dict, uploadedImage: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def processImage(streaming_response: bool, save_response_to_db: bool, user_message: str, model_configuration: ModelConfiguration, gpt: GPTData, conversations: list,  use_case: str, prompt_templates: dict, uploadedImage: UploadFile = None, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     image_url = ""
     base64_image = ""
     image_response = "No data found in image"
@@ -958,9 +955,9 @@ async def processImage(streaming_response: bool, save_response_to_db: bool, user
 
             # 5. Call Azure OpenAI API for image analysis
             if streaming_response:
-                image_response = await analyzeImage_stream(gpt, conversations, model_configuration, save_response_to_db, use_case, prompts_template, socket_manager=socket_manager,websocket=websocket)
+                image_response = await analyzeImage_stream(gpt, conversations, model_configuration, save_response_to_db, use_case, prompt_templates, socket_manager=socket_manager,websocket=websocket)
             else:
-                image_response = await analyzeImage_standard(gpt, conversations, model_configuration, save_response_to_db, use_case, prompts_template, socket_manager=socket_manager,websocket=websocket)
+                image_response = await analyzeImage_standard(gpt, conversations, model_configuration, save_response_to_db, use_case, prompt_templates, socket_manager=socket_manager,websocket=websocket)
 
             logger.info(f"Image Response: {image_response}")
 
@@ -1018,13 +1015,13 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
 
     gpt_id = str(gpt["_id"])
     
-    PROMPT_TEMPLATES = app_cache.get("PROMPT_TEMPLATES")
+    PROMPT_TEMPLATES: dict = app_cache.get(gpt_id)
     #await save_prompt_templates_to_db(gpt_id)
     logger.info(f"prompt_templates in azureai_utils {PROMPT_TEMPLATES}") 
 
     # Step 1 : Get the use case, role information, model configuration parameters
     use_case = await get_use_case(gpt)
-    model_configuration = await construct_model_configuration(use_case, PROMPT_TEMPLATES) if use_rag else ("AI Assistant", model_configuration)
+    model_configuration: ModelConfiguration = await construct_model_configuration(use_case, PROMPT_TEMPLATES) if use_rag else ("AI Assistant", model_configuration)
 
     # Due to last 2 lines, fetch model_configuration from USE_CASE_CONFIG the web search from UI gets lost. 
     # So preserve and reset the value post the actual model configuration is fetched.
@@ -1095,7 +1092,18 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
         logger.info("CASE 1 : No RAG but Image is present")
         proceed = True     
         # Step 1 : Process the image
-        image_result = await processImage(streaming_response, True, user_message, model_configuration, gpt, conversations, use_case, PROMPT_TEMPLATES, uploadedFile,  socket_manager, websocket)
+        image_result = await processImage(
+            streaming_response=streaming_response, 
+            save_response_to_db=True, 
+            user_message=user_message, 
+            model_configuration=model_configuration, 
+            gpt=gpt, 
+            conversations=conversations, 
+            use_case=use_case, 
+            prompt_templates=PROMPT_TEMPLATES, 
+            uploadedImage=uploadedFile,  
+            socket_manager=socket_manager, 
+            websocket=websocket)
         
         # Step 2 : Pass the image response to the function calling to determine the next steps
         context_information, additional_context_information, web_search_results, conversations = await determineFunctionCalling(
@@ -1106,7 +1114,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             conversations=conversations,
             model_configuration=model_configuration,
             scenario="post_response",
-            prompts_template=PROMPT_TEMPLATES,
+            prompt_templates=PROMPT_TEMPLATES,
             web_search=web_search,
             socket_manager=socket_manager, 
             websocket=websocket
@@ -1139,7 +1147,19 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             "content": IMAGE_ANALYSIS_SYSTEM_PROMPT
         })
        
-        image_response = await processImage(False, False, user_message, model_configuration, gpt, conversation_for_image_analysis, use_case, PROMPT_TEMPLATES, uploadedFile,  socket_manager, websocket)
+        image_response = await processImage(
+            streaming_response=False, 
+            save_response_to_db=False, 
+            user_message=user_message, 
+            model_configuration=model_configuration, 
+            gpt=gpt, 
+            conversations=conversation_for_image_analysis, 
+            use_case=use_case, 
+            prompt_templates=PROMPT_TEMPLATES, 
+            uploadedImage=uploadedFile,  
+            socket_manager=socket_manager, 
+            websocket=websocket)
+        
         conversation_for_image_analysis.clear()
  
         # Step 2 : Function Calling
@@ -1151,10 +1171,11 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 gpt=gpt, 
                 conversations=conversations, 
                 model_configuration=model_configuration, 
-                prompts_template=PROMPT_TEMPLATES, 
+                prompt_templates=PROMPT_TEMPLATES, 
                 web_search=web_search,
                 socket_manager=socket_manager, 
                 websocket=websocket)
+            
     elif use_rag and not has_image:
         logger.info("CASE 3 : RAG and No Image")
         proceed = True
@@ -1165,7 +1186,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
             gpt=gpt, 
             conversations=conversations, 
             model_configuration=model_configuration, 
-            PROMPT_TEMPLATES=PROMPT_TEMPLATES, 
+            prompt_templates=PROMPT_TEMPLATES, 
             web_search=web_search,
             socket_manager=socket_manager, 
             websocket=websocket
@@ -1204,7 +1225,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 model_configuration=model_configuration, 
                 conversations=conversations, 
                 use_case=use_case, 
-                prompts_template=PROMPT_TEMPLATES, 
+                prompt_templates=PROMPT_TEMPLATES, 
                 web_search=web_search, 
                 websocket=websocket, 
                 socket_manager=socket_manager)
@@ -1218,7 +1239,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
                 model_configuration=model_configuration, 
                 conversations=conversations, 
                 use_case=use_case, 
-                prompts_template=PROMPT_TEMPLATES, 
+                prompt_templates=PROMPT_TEMPLATES, 
                 web_search=web_search, 
                 websocket=websocket, 
                 socket_manager=socket_manager
@@ -1254,7 +1275,7 @@ async def generate_response(streaming_response: bool, user_message: str, model_c
     return response
 
 
-async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, prompts_template: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: str, get_extra_data: bool, prompt_templates: dict, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     """
     # PREREQUISITES
         pip install azure-identity
@@ -1316,7 +1337,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
 
         # Get the documents
         if use_case == "TRACK_ORDERS_TKE" or use_case == "MANAGE_TICKETS" or use_case == "REVIEW_BYTES" or use_case == "COMPLAINTS_AND_FEEDBACK" or use_case == "SEASONAL_SALES" or use_case == "DOC_SEARCH" or use_case == "GENTELL_WOUND_ADVISOR" or use_case == "NP_KNOWLEDGE_BASE":
-            selected_fields = prompts_template[use_case]["fields_to_select"]
+            selected_fields = prompt_templates[use_case]["fields_to_select"]
         else:
             selected_fields = ALL_FIELDS 
 
@@ -1326,7 +1347,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
         #selected_fields = ["user_name", "order_id", "product_description", "brand", "order_date", "status", "delivery_date"]
         search_results = azure_ai_search_client.search(search_text=search_query, 
                                                  #top = 5,
-                                                 top=prompts_template.get(use_case, {}).get("document_count", 30), 
+                                                 top=prompt_templates.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
                                                 #  semantic_configuration_name=PROMPT_TEMPLATES[use_case]["semantic_configuration_name"],
@@ -1343,7 +1364,7 @@ async def get_data_from_azure_search(search_query: str, use_case: str, gpt_id: s
             )
 
             additional_search_results = additional_azure_ai_search_client.search(search_text=search_query, 
-                                                 top=prompts_template.get(use_case, {}).get("document_count", 30), 
+                                                 top=prompt_templates.get(use_case, {}).get("document_count", 30), 
                                                  include_total_count=True, 
                                                  query_type="semantic",
                                                  semantic_configuration_name = NIA_FINOLEX_PDF_SEARCH_SEMANTIC_CONFIGURATION_NAME,
@@ -1409,7 +1430,7 @@ def get_azure_openai_deployments():
     except Exception as e:
         logger.error("Exception while fetching deployments from Azure OpenAI", exc_info=True)
 
-async def summarize_conversations(chat_history: list, gpt: GPTData, usecase: str, prompts_template: dict):
+async def summarize_conversations(chat_history: list, gpt: GPTData, usecase: str, prompt_templates: dict):
     """
     Summarize the conversations using LLM (replace with your code)
     """
@@ -1441,7 +1462,7 @@ async def summarize_conversations(chat_history: list, gpt: GPTData, usecase: str
         model_configuration: ModelConfiguration = model_configuration if  isinstance(model_configuration, ModelConfiguration) else ModelConfiguration(**SUMMARIZE_MODEL_CONFIGURATION)
 
         # Get Azure Open AI Client and fetch response
-        conversation_summary = await get_completion_from_messages_default(DEFAULT_MODEL_NAME, messages, model_configuration, usecase, prompts_template)
+        conversation_summary = await get_completion_from_messages_default(DEFAULT_MODEL_NAME, messages, model_configuration, usecase, prompt_templates)
 
         # Remove the summarized conversations from the messages collection
         delete_chat_history(gpt["_id"], gpt["name"])
@@ -1449,7 +1470,7 @@ async def summarize_conversations(chat_history: list, gpt: GPTData, usecase: str
 
     return conversation_summary
 
-async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, prompts_template: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def determineFunctionCalling(search_query: str, image_response: str, use_case: str, gpt: GPTData, conversations: list, model_configuration: ModelConfiguration, scenario: str, prompt_templates: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     function_calling_conversations = []
     data = []
     additional_data = []
@@ -1530,7 +1551,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         use_case=function_args.get("use_case"),
                         get_extra_data= function_args.get("get_extra_data") if use_case == "DOC_SEARCH" else False, # Only for doc search the fetch of extra data must be enabled
-                        prompts_template=prompts_template,
+                        prompt_templates=prompt_templates,
                         gpt_id = gpt_id,
                         socket_manager=socket_manager,
                         websocket=websocket      
@@ -1543,7 +1564,7 @@ async def determineFunctionCalling(search_query: str, image_response: str, use_c
                         search_query=function_args.get("search_query"),
                         use_case=function_args.get("use_case"),
                         get_extra_data= False, # Only for doc search the fetch of extra data must be enabled
-                        prompts_template=prompts_template,
+                        prompt_templates=prompt_templates,
                         gpt_id = gpt_id,
                         socket_manager=socket_manager,
                         websocket=websocket      
@@ -1942,7 +1963,7 @@ async def call_llm(client: AsyncAzureOpenAI, gpt: GPTData, conversations: List[d
     model_response = response.choices[0].message.content
     return response, model_response
 
-async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, prompts_template: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
+async def do_post_response_processing(user_query: str, gpt: GPTData, model_configuration: ModelConfiguration, use_case: str, model_response: str, prompt_templates: dict, web_search: bool, socket_manager: ConnectionManager = None, websocket: WebSocket = None):
     pdf_id = None
     logger.info("[PDF INTENT] Checking for PDF intent with OpenAI function calling...")
     pdf_intent_conversation = [
@@ -1958,7 +1979,7 @@ async def do_post_response_processing(user_query: str, gpt: GPTData, model_confi
                                    conversations=pdf_intent_conversation, 
                                    model_configuration=model_configuration, 
                                    scenario="post_response", 
-                                   prompts_template=prompts_template,
+                                   prompt_templates=prompt_templates,
                                    web_search=web_search,
                                    socket_manager=socket_manager, 
                                    websocket=websocket)
@@ -2011,12 +2032,12 @@ def base64_to_image(base64_string: str, save_path=None, filename=None):
         logging.error(f"Error converting base64 to image: {e}", exc_info=True)
         return None, None
     
-async def construct_model_configuration(use_case, PROMPT_TEMPLATES: dict):
-    model_configuration = DEFAULT_MODEL_CONFIGURATION
+async def construct_model_configuration(use_case, prompt_templates: dict) -> ModelConfiguration:
+    model_configuration = ModelConfiguration(**DEFAULT_MODEL_CONFIGURATION)
 
-    # Mapping of use cases to role_information values
-    if use_case and use_case in PROMPT_TEMPLATES:
-        model_configuration = PROMPT_TEMPLATES[use_case]["model_configuration"]
+    if use_case and use_case in prompt_templates:
+        model_configuration = prompt_templates[use_case]["model_configuration"]
+        model_configuration = ModelConfiguration(**model_configuration)
 
     logger.info(f"Use_case: {use_case} \n Model Configuration: {model_configuration}")
     

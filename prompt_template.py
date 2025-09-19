@@ -20,7 +20,6 @@ async def build_prompt_templates(gpt_id: str):
         logging.info(f"use case '{name}' config: {config}")
         
         prompt_templates[name] = BasePromptTemplate(
-            role=config.get("role_information", "You are an AI assistant."),
             context=config.get("user_message", "<query>{query}</query>"),
             task=[config.get("instructions", "")],
             flow=config.get("flow", []),
